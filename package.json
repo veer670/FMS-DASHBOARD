@@ -1,0 +1,13 @@
+{
+  "name": "fms-dashboard",
+  "version": "1.0.0",
+  "description": "Homeland Group FMS dashboard: live task, tower, department and contractor progress from the ASAP FMS database",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js --open",
+    "serve": "node server.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "UNLICENSED"
+}

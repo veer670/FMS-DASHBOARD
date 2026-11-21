@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homeland FMS Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231F3A5F'/%3E%3Cpath d='M8 23V12l8-5 8 5v11' fill='none' stroke='%23B8863B' stroke-width='2.5'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f3f4f6; --surface: #ffffff; --surface-2: #f8f9fb; --border: #e3e6eb;
+    --text: #0b0b0b; --text-2: #52514e; --muted: #7d7c77;
+    --brand: #1F3A5F; --gold: #B8863B;
+    --bar: #2a78d6; --track: #e9edf3; --grid: #eceef1;
+    --good: #0ca30c; --good-text: #006300; --warn: #fab219; --warn-text: #8a5a00;
+    --crit: #d03b3b; --crit-text: #b42828; --crit-bg: #fdecec;
+    --shadow: 0 1px 2px rgba(16,24,40,.05);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #111110; --surface: #1a1a19; --surface-2: #222221; --border: #2f2f2d;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e86;
+    --bar: #3987e5; --track: #2b2b29; --grid: #2a2a28;
+    --good-text: #4cc94c; --warn-text: #fab219; --crit-text: #f07c7c; --crit-bg: #3a1f1f;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+
+  header.top { background: var(--brand); color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 3px solid var(--gold); position: sticky; top: 0; z-index: 20; }
+  .logo { width: 34px; height: 34px; flex: none; }
+  .title h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: .2px; }
+  .title .sub { color: #d9c29a; font-size: 12px; }
+  .top .spacer { flex: 1; }
+  .top .meta { font-size: 12px; color: #c9d3e1; text-align: right; }
+  .btn { border: 1px solid var(--border); background: var(--surface); padding: 6px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { background: var(--surface-2); }
+  .top .btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.25); color: #fff; }
+  .top .btn:hover { background: rgba(255,255,255,.18); }
+  .btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--bar); outline-offset: 1px; }
+
+  main { padding: 18px 24px 40px; max-width: 1600px; margin: 0 auto; }
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 16px; }
+  .filters label { display: flex; flex-direction: column; font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: .4px; gap: 3px; }
+  .filters select, .filters input[type=search] { min-width: 170px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); text-transform: none; letter-spacing: 0; font-size: 13px; }
+  .filters select { max-width: 240px; }
+  .filters input[type=search] { min-width: 200px; }
+  .filters .check { flex-direction: row; align-items: center; gap: 6px; text-transform: none; font-size: 13px; padding-bottom: 7px; letter-spacing: 0; }
+  .filters .count { margin-left: auto; color: var(--text-2); font-size: 13px; padding-bottom: 7px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .kpi .label { font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+  .kpi .value { font-size: 28px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .kpi .note { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .kpi.crit .value { color: var(--crit-text); }
+  .kpi.good .value { color: var(--good-text); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: var(--shadow); min-width: 0; }
+  .card.wide { grid-column: 1 / -1; }
+  .card h2 { font-size: 15px; margin: 0; }
+  .card .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+  .card .head .hint { color: var(--muted); font-size: 12px; }
+  .card .head .act { margin-left: auto; display: flex; gap: 6px; }
+  .link { background: none; border: none; color: var(--bar); cursor: pointer; padding: 0; font-size: 12px; }
+
+  /* progress bars */
+  .bars { display: flex; flex-direction: column; gap: 9px; }
+  .brow { display: grid; grid-template-columns: minmax(120px, 34%) 1fr 150px; align-items: center; gap: 10px; cursor: default; }
+  .brow.click { cursor: pointer; }
+  .brow .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .brow .lbl small { color: var(--muted); }
+  .track { height: 12px; background: var(--track); border-radius: 4px; overflow: hidden; }
+  .fill { height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 0; }
+  .brow .num { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .brow .num b { color: var(--text); }
+  .brow:hover .lbl { color: var(--bar); }
+  .od { color: var(--crit-text); font-weight: 600; }
+
+  /* chart */
+  svg text { fill: var(--muted); font-size: 11px; }
+  .col { fill: var(--bar); }
+  .col-hit { fill: transparent; cursor: default; }
+  .col-hit:hover + .col, .col.hl { opacity: .8; }
+
+  /* tables */
+  .tbl-wrap { overflow: auto; max-height: 520px; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { position: sticky; top: 0; background: var(--surface-2); font-weight: 600; font-size: 12px; color: var(--text-2); cursor: pointer; user-select: none; white-space: nowrap; z-index: 1; }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  th .arr { opacity: .6; font-size: 10px; }
+  tr:hover td { background: var(--surface-2); }
+  td .loc { color: var(--muted); font-size: 12px; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 1px 8px; border-radius: 99px; white-space: nowrap; border: 1px solid var(--border); }
+  .pill.crit { color: var(--crit-text); border-color: transparent; background: var(--crit-bg); }
+  .pill.good { color: var(--good-text); }
+  .pill.warn { color: var(--warn-text); }
+  .mini { display: inline-block; width: 60px; height: 6px; background: var(--track); border-radius: 3px; vertical-align: middle; margin-right: 6px; overflow: hidden; }
+  .mini > i { display: block; height: 100%; background: var(--bar); }
+  .more { text-align: center; padding: 8px; }
+  .empty { color: var(--muted); padding: 18px; text-align: center; }
+
+  .feed { list-style: none; margin: 0; padding: 0; max-height: 520px; overflow: auto; }
+  .feed li { padding: 9px 2px; border-bottom: 1px solid var(--grid); }
+  .feed .who { font-weight: 600; font-size: 13px; }
+  .feed .when { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .feed .what { font-size: 13px; margin-top: 2px; word-break: break-word; }
+  .feed .task { color: var(--muted); font-size: 12px; }
+
+  #tip { position: fixed; pointer-events: none; background: #111; color: #fff; font-size: 12px; padding: 7px 9px; border-radius: 6px; white-space: pre-line; z-index: 50; max-width: 320px; opacity: 0; transition: opacity .08s; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  :root[data-theme="dark"] #tip { background: #f0efec; color: #111; }
+  #banner { display: none; margin-bottom: 16px; border: 1px solid var(--crit); background: var(--crit-bg); color: var(--crit-text); border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; font-size: 13px; }
+  .loading { opacity: .55; pointer-events: none; transition: opacity .15s; }
+
+  @media (max-width: 1200px) { .kpis { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); } .brow { grid-template-columns: 38% 1fr 110px; } main { padding: 14px; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="rgba(255,255,255,.08)"/><path d="M8 23V12l8-5 8 5v11" fill="none" stroke="#B8863B" stroke-width="2.5"/><path d="M13 23v-6h6v6" fill="none" stroke="#fff" stroke-width="2"/></svg>
+  <div class="title">
+    <h1>Homeland FMS Dashboard</h1>
+    <div class="sub">Field Management System · live from ASAP</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="meta" id="meta">Loading…</div>
+  <button class="btn" id="btnRefresh" title="Fetch fresh data from the FMS">↻ Refresh</button>
+  <button class="btn" id="btnTheme" title="Toggle light/dark">Dark</button>
+</header>
+
+<main id="app">
+  <div id="banner" role="alert"></div>
+
+  <section class="filters" aria-label="Filters">
+    <label>Project<select id="fProject"></select></label>
+    <label>Tower<select id="fTower"></select></label>
+    <label>Department<select id="fDept"></select></label>
+    <label>Contractor<select id="fContractor"></select></label>
+    <label>Search<input type="search" id="fQ" placeholder="Task, area, sub-area…"></label>
+    <label class="check"><input type="checkbox" id="fInactive"> Include inactive</label>
+    <button class="btn" id="btnReset">Reset</button>
+    <button class="btn" id="btnCsv" title="Download the filtered tasks as CSV">⤓ CSV</button>
+    <div class="count" id="count"></div>
+  </section>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid">
+    <div class="card">
+      <div class="head"><h2>Progress by tower</h2><span class="hint">% of tasks completed · click to filter</span><div class="act" id="actTower"></div></div>
+      <div class="bars" id="chTower"></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Progress by department</h2><span class="hint">% of tasks completed · click to filter</span></div>
+      <div class="bars" id="chDept"></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Tasks completed per week</h2><span class="hint">last 16 weeks</span></div>
+      <div id="chWeekly"></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Progress by contractor</h2><span class="hint">tasks in assigned areas, matching department</span><div class="act" id="actContractor"></div></div>
+      <div class="bars" id="chContractor"></div>
+    </div>
+
+    <div class="card wide">
+      <div class="head"><h2>Overdue tasks</h2><span class="hint" id="hOverdue"></span></div>
+      <div id="tOverdue"></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Due in the next 14 days</h2><span class="hint" id="hSoon"></span></div>
+      <div id="tSoon"></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Recent activity</h2><span class="hint">latest task &amp; step updates (system reminders hidden)</span></div>
+      <ul class="feed" id="feed"></ul>
+    </div>
+    <div class="card wide">
+      <div class="head"><h2>Area breakdown</h2><span class="hint">click a column to sort</span></div>
+      <div id="tArea"></div>
+    </div>
+    <div class="card wide">
+      <div class="head"><h2>Contractor area deadlines</h2></div>
+      <div id="tDeadline"></div>
+    </div>
+  </section>
+</main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const DAY = 86400000;
+const fmtN = n => n.toLocaleString('en-IN');
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+const fmtDate = iso => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
+const dayOf = iso => { if (!iso) return null; const d = new Date(iso); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const today0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+function ago(iso) {
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 86400 * 30) return Math.floor(s / 86400) + 'd ago';
+  return fmtDate(iso);
+}
+
+let D = null;          // prepared dataset
+const F = { project: '', tower: '', dept: '', contractor: '', q: '', inactive: false };
+const UI = { towerAll: false, contractorAll: false };
+
+// ---------- theme ----------
+const savedTheme = (() => { try { return localStorage.getItem('fms-theme'); } catch { return null; } })();
+const prefersDark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+const setTheme = t => { document.documentElement.dataset.theme = t; $('#btnTheme').textContent = t === 'dark' ? 'Light' : 'Dark'; };
+setTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+$('#btnTheme').onclick = () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  setTheme(t);
+  try { localStorage.setItem('fms-theme', t); } catch {}
+};
+
+// ---------- tooltip ----------
+const tip = $('#tip');
+document.addEventListener('mousemove', e => {
+  const el = e.target.closest && e.target.closest('[data-tip]');
+  if (!el) { tip.style.opacity = 0; return; }
+  tip.textContent = el.dataset.tip;
+  tip.style.opacity = 1;
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+});
+
+// ---------- data ----------
+async function load(force) {
+  $('#app').classList.add('loading');
+  $('#meta').textContent = 'Loading…';
+  try {
+    const res = await fetch('api/data' + (force ? '?refresh=1' : ''));
+    const body = await res.json().catch(() => ({ error: 'Invalid JSON from local server (HTTP ' + res.status + ')' }));
+    if (!res.ok) throw body;
+    D = prepare(body);
+    $('#banner').style.display = 'none';
+    fillFilters();
+    render();
+    $('#meta').innerHTML = 'Data as of ' + esc(new Date(body.generatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })) + '<br>' + esc(new Date(body.generatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
+  } catch (e) {
+    const b = $('#banner');
+    b.style.display = 'block';
+    b.textContent = 'Could not load FMS data.\n\n' + (e.error || e.message || String(e)) + (e.detail ? '\n' + JSON.stringify(e.detail, null, 2) : '') + '\n\nCheck the terminal running server.js for details.';
+    $('#meta').textContent = 'Load failed';
+  } finally {
+    $('#app').classList.remove('loading');
+  }
+}
+
+function prepare(d) {
+  const by = (arr, k = 'id') => new Map(arr.map(x => [x[k], x]));
+  const P = by(d.projects), T = by(d.towers), A = by(d.areas), S = by(d.subAreas), Dep = by(d.departments), U = by(d.users), C = by(d.contractors);
+  const userByEmail = new Map(d.users.filter(u => u.email).map(u => [u.email, u]));
+  const t0 = today0();
+  const tasks = [];
+  for (const t of d.tasks) {
+    const s = S.get(t.subAreaId), a = s && A.get(s.areaId), tw = a && T.get(a.towerId), p = tw && P.get(tw.projectId);
+    if (!p) continue; // orphaned task
+    const due = dayOf(t.end), st = dayOf(t.start);
+    const state = t.done ? 'done' : due !== null && due < t0 ? 'overdue' : st !== null && st > t0 ? 'notstarted' : 'open';
+    tasks.push({
+      ...t, subArea: s, area: a, tower: tw, project: p,
+      dept: Dep.get(t.deptId), manager: U.get(t.managerId),
+      live: t.active && s.active && a.active && tw.active && p.active,
+      state, daysOver: state === 'overdue' ? Math.round((t0 - due) / DAY) : 0,
+      dueIn: due === null ? null : Math.round((due - t0) / DAY),
+      search: (t.name + ' ' + s.name + ' ' + a.name + ' ' + tw.name + ' ' + p.name).toLowerCase(),
+    });
+  }
+  const areasOf = new Map();
+  for (const l of d.areaContractor) {
+    if (!areasOf.has(l.contractorId)) areasOf.set(l.contractorId, new Set());
+    areasOf.get(l.contractorId).add(l.areaId);
+  }
+  const taskById = new Map(tasks.map(t => [t.id, t]));
+  return { ...d, P, T, A, S, Dep, U, C, tasks, areasOf, taskById, userByEmail };
+}
+
+function inContractor(t, cid) {
+  const c = D.C.get(cid), areas = D.areasOf.get(cid);
+  if (!c || !areas || !areas.has(t.area.id)) return false;
+  return !c.departmentId || c.departmentId === t.deptId;
+}
+
+function filtered(skip = {}) {
+  const q = F.q.trim().toLowerCase();
+  return D.tasks.filter(t =>
+    (F.inactive || t.live) &&
+    (skip.project || !F.project || t.project.id === F.project) &&
+    (skip.tower || !F.tower || t.tower.id === F.tower) &&
+    (skip.dept || !F.dept || t.deptId === F.dept) &&
+    (skip.contractor || !F.contractor || inContractor(t, F.contractor)) &&
+    (!q || t.search.includes(q)));
+}
+
+// ---------- filters ----------
+function opts(sel, list, current, allLabel) {
+  sel.innerHTML = `<option value="">${esc(allLabel)}</option>` + list.map(o => `<option value="${esc(o.id)}"${o.id === current ? ' selected' : ''}>${esc(o.name)}</option>`).join('');
+}
+function fillFilters() {
+  const show = x => F.inactive || x.active;
+  opts($('#fProject'), D.projects.filter(show), F.project, 'All projects');
+  const towers = D.towers.filter(t => show(t) && (!F.project || t.projectId === F.project))
+    .map(t => ({ id: t.id, name: F.project ? t.name : t.name + ' — ' + (D.P.get(t.projectId)?.name || '') }));
+  if (F.tower && !towers.some(t => t.id === F.tower)) F.tower = '';
+  opts($('#fTower'), towers, F.tower, 'All towers');
+  opts($('#fDept'), D.departments, F.dept, 'All departments');
+  opts($('#fContractor'), D.contractors, F.contractor, 'All contractors');
+}
+const bind = (id, key, ev = 'change', fn = el => el.value) => $(id).addEventListener(ev, e => { F[key] = fn(e.target); if (key === 'project' || key === 'inactive') { F.tower = key === 'project' ? '' : F.tower; fillFilters(); } render(); });
+bind('#fProject', 'project'); bind('#fTower', 'tower'); bind('#fDept', 'dept'); bind('#fContractor', 'contractor');
+bind('#fQ', 'q', 'input'); bind('#fInactive', 'inactive', 'change', el => el.checked);
+$('#btnReset').onclick = () => { Object.assign(F, { project: '', tower: '', dept: '', contractor: '', q: '', inactive: false }); $('#fQ').value = ''; $('#fInactive').checked = false; fillFilters(); render(); };
+$('#btnRefresh').onclick = () => load(true);
+function setFilter(key, val) { F[key] = F[key] === val ? '' : val; if (key === 'tower' && F.tower) F.project = D.T.get(F.tower).projectId; fillFilters(); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+// ---------- render ----------
+function render() {
+  if (!D) return;
+  const tasks = filtered();
+  $('#count').textContent = fmtN(tasks.length) + ' tasks in view';
+  renderKpis(tasks);
+  renderTowers();
+  renderDepts();
+  renderWeekly(tasks);
+  renderContractors();
+  renderOverdue(tasks);
+  renderSoon(tasks);
+  renderFeed(tasks);
+  renderAreas(tasks);
+  renderDeadlines();
+}
+
+function renderKpis(tasks) {
+  const t0 = today0();
+  const done = tasks.filter(t => t.done).length;
+  const overdue = tasks.filter(t => t.state === 'overdue').length;
+  const soon = tasks.filter(t => !t.done && t.dueIn !== null && t.dueIn >= 0 && t.dueIn <= 7).length;
+  const week = tasks.filter(t => t.done && t.doneAt && new Date(t.doneAt).getTime() >= t0 - 6 * DAY).length;
+  const noDate = tasks.filter(t => !t.done && !t.end).length;
+  const sT = tasks.reduce((a, t) => a + t.stepsTotal, 0), sD = tasks.reduce((a, t) => a + t.stepsDone, 0);
+  const k = (label, value, note, cls = '', dot = '') => `<div class="kpi ${cls}"><div class="label">${dot ? `<span class="dot" style="background:${dot}"></span>` : ''}${esc(label)}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
+  $('#kpis').innerHTML =
+    k('Total tasks', fmtN(tasks.length), fmtN(tasks.length - done) + ' open') +
+    k('Completed', pct(done, tasks.length) + '%', fmtN(done) + ' of ' + fmtN(tasks.length) + ' tasks', 'good', 'var(--good)') +
+    k('Overdue', fmtN(overdue), '⚠ past due date, not done', overdue ? 'crit' : '', 'var(--crit)') +
+    k('Due in 7 days', fmtN(soon), fmtN(noDate) + ' open tasks have no due date', '', 'var(--warn)') +
+    k('Completed this week', fmtN(week), 'last 7 days') +
+    k('Steps done', pct(sD, sT) + '%', fmtN(sD) + ' of ' + fmtN(sT) + ' steps');
+}
+
+function bars(el, rows, opt = {}) {
+  if (!rows.length) { el.innerHTML = '<div class="empty">No data for this filter</div>'; return; }
+  const limit = opt.all ? rows.length : (opt.limit || 12);
+  el.innerHTML = rows.slice(0, limit).map(r => {
+    const p = pct(r.done, r.total);
+    const tipTxt = `${r.label}${r.sub ? ' · ' + r.sub : ''}\nCompleted: ${r.done} of ${r.total} (${p}%)\nOverdue: ${r.overdue}\nOpen: ${r.total - r.done}`;
+    return `<div class="brow${opt.onClick ? ' click' : ''}${r.selected ? ' sel' : ''}" data-id="${esc(r.id)}" data-tip="${esc(tipTxt)}">
+      <div class="lbl">${r.selected ? '▸ ' : ''}${esc(r.label)}${r.sub ? ` <small>${esc(r.sub)}</small>` : ''}</div>
+      <div class="track"><div class="fill" style="width:${p}%"></div></div>
+      <div class="num"><b>${p}%</b> · ${fmtN(r.done)}/${fmtN(r.total)}${r.overdue ? ` · <span class="od">${fmtN(r.overdue)} late</span>` : ''}</div></div>`;
+  }).join('');
+  if (opt.onClick) el.querySelectorAll('.brow').forEach(b => (b.onclick = () => opt.onClick(b.dataset.id)));
+  if (opt.toggle) {
+    opt.toggle.innerHTML = rows.length > (opt.limit || 12) ? `<button class="link">${opt.all ? 'Show top ' + (opt.limit || 12) : 'Show all ' + rows.length}</button>` : '';
+    const b = opt.toggle.querySelector('button'); if (b) b.onclick = opt.onToggle;
+  }
+}
+
+function group(tasks, keyFn, labelFn) {
+  const m = new Map();
+  for (const t of tasks) {
+    const k = keyFn(t); if (k == null) continue;
+    let g = m.get(k);
+    if (!g) m.set(k, (g = { id: k, ...labelFn(t), total: 0, done: 0, overdue: 0 }));
+    g.total++; if (t.done) g.done++; if (t.state === 'overdue') g.overdue++;
+  }
+  return [...m.values()];
+}
+
+function renderTowers() {
+  const rows = group(filtered({ tower: true }), t => t.tower.id, t => ({ label: t.tower.name, sub: F.project ? '' : t.project.name }))
+    .map(r => ({ ...r, selected: r.id === F.tower }))
+    .sort((a, b) => b.total - a.total);
+  bars($('#chTower'), rows, { onClick: id => setFilter('tower', id), all: UI.towerAll, toggle: $('#actTower'), onToggle: () => { UI.towerAll = !UI.towerAll; renderTowers(); } });
+}
+function renderDepts() {
+  const rows = group(filtered({ dept: true }), t => t.deptId, t => ({ label: t.dept ? t.dept.name : 'No department' }))
+    .map(r => ({ ...r, selected: r.id === F.dept }))
+    .sort((a, b) => b.total - a.total);
+  bars($('#chDept'), rows, { onClick: id => setFilter('dept', id), all: true });
+}
+function renderContractors() {
+  const base = filtered({ contractor: true });
+  const rows = [];
+  for (const c of D.contractors) {
+    const ts = base.filter(t => inContractor(t, c.id));
+    if (!ts.length) continue;
+    rows.push({ id: c.id, label: c.name, sub: D.Dep.get(c.departmentId)?.name || '', total: ts.length, done: ts.filter(t => t.done).length, overdue: ts.filter(t => t.state === 'overdue').length, selected: c.id === F.contractor });
+  }
+  rows.sort((a, b) => b.total - a.total);
+  bars($('#chContractor'), rows, { onClick: id => setFilter('contractor', id), all: UI.contractorAll, limit: 10, toggle: $('#actContractor'), onToggle: () => { UI.contractorAll = !UI.contractorAll; renderContractors(); } });
+}
+
+function weekStart(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
+function renderWeekly(tasks) {
+  const N = 16, cur = weekStart(Date.now());
+  const weeks = Array.from({ length: N }, (_, i) => ({ start: cur - (N - 1 - i) * 7 * DAY, n: 0 }));
+  const first = weeks[0].start;
+  for (const t of tasks) {
+    if (!t.done || !t.doneAt) continue;
+    const ws = weekStart(new Date(t.doneAt).getTime());
+    if (ws < first) continue;
+    const w = weeks.find(w => w.start === ws) || weeks.find(w => Math.abs(w.start - ws) < DAY); // DST-safe
+    if (w) w.n++;
+  }
+  const max = Math.max(1, ...weeks.map(w => w.n));
+  const step = (() => { const raw = Math.max(1, max / 4), p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (m * p >= raw) return m * p; return raw; })();
+  const nice = step * Math.ceil(max / step);
+  const W = 640, H = 230, L = 34, R = 8, Tp = 10, B = 26, pw = W - L - R, ph = H - Tp - B;
+  const bw = pw / N, gap = 2;
+  const y = v => Tp + ph - (v / nice) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Tasks completed per week">`;
+  for (let v = 0; v <= nice + 1e-9; v += step) { s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`; }
+  weeks.forEach((w, i) => {
+    const x = L + i * bw + gap / 2, h = Math.max(0, ph - (y(w.n) - Tp)), top = y(w.n);
+    const lbl = new Date(w.start).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    const tipTxt = `Week of ${lbl}\n${w.n} task${w.n === 1 ? '' : 's'} completed`;
+    const r = Math.min(4, (bw - gap) / 2, h);
+    if (w.n > 0) s += `<path class="col" d="M${x},${top + h} V${top + r} Q${x},${top} ${x + r},${top} H${x + bw - gap - r} Q${x + bw - gap},${top} ${x + bw - gap},${top + r} V${top + h} Z"/>`;
+    s += `<rect class="col-hit" x="${L + i * bw}" y="${Tp}" width="${bw}" height="${ph}" data-tip="${esc(tipTxt)}"/>`;
+    if (i % 2 === 1 || N <= 8) s += `<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(lbl)}</text>`;
+  });
+  s += `<line x1="${L}" x2="${W - R}" y1="${Tp + ph}" y2="${Tp + ph}" stroke="var(--border)"/></svg>`;
+  const total = weeks.reduce((a, w) => a + w.n, 0);
+  $('#chWeekly').innerHTML = s + `<div style="font-size:12px;color:var(--muted);margin-top:4px">${fmtN(total)} tasks completed in 16 weeks · avg ${(total / N).toFixed(1)}/week</div>`;
+}
+
+// ---------- tables ----------
+const TBL = {}; // per-table sort/limit state
+function table(el, key, rows, cols, defSort, pageSize = 25) {
+  const st = TBL[key] || (TBL[key] = { sort: defSort[0], dir: defSort[1], limit: pageSize });
+  if (!rows.length) { el.innerHTML = '<div class="empty">Nothing here for this filter 🎉</div>'; return; }
+  const col = cols.find(c => c.key === st.sort) || cols[0];
+  const val = col.sortVal || (r => r[col.key]);
+  rows = rows.slice().sort((a, b) => {
+    const x = val(a), y = val(b);
+    if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+    return (typeof x === 'string' ? x.localeCompare(y) : x - y) * st.dir;
+  });
+  const shown = rows.slice(0, st.limit);
+  el.innerHTML = `<div class="tbl-wrap"><table><thead><tr>${cols.map(c => `<th class="${c.num ? 'num' : ''}" data-k="${c.key}">${esc(c.label)} <span class="arr">${c.key === st.sort ? (st.dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('')}</tr></thead><tbody>${
+    shown.map(r => `<tr>${cols.map(c => `<td class="${c.num ? 'num' : ''}">${c.html ? c.html(r) : esc(r[c.key])}</td>`).join('')}</tr>`).join('')
+  }</tbody></table></div>${rows.length > shown.length ? `<div class="more"><button class="link">${rows.length - shown.length <= pageSize * 2 ? `Show remaining ${fmtN(rows.length - shown.length)}` : `Show ${pageSize * 2} more (${fmtN(rows.length - shown.length)} remaining)`}</button></div>` : ''}`;
+  el.querySelectorAll('th').forEach(th => (th.onclick = () => { const k = th.dataset.k; if (st.sort === k) st.dir *= -1; else { st.sort = k; st.dir = cols.find(c => c.key === k).num ? -1 : 1; } table(el, key, rows, cols, defSort, pageSize); }));
+  const more = el.querySelector('.more button'); if (more) more.onclick = () => { st.limit += pageSize * 2; table(el, key, rows, cols, defSort, pageSize); };
+}
+const loc = t => `${esc(t.project.name)} › ${esc(t.tower.name)} › ${esc(t.area.name)} › ${esc(t.subArea.name)}`;
+const taskCell = t => `${esc(t.name)}<div class="loc">${loc(t)}</div>`;
+const stepsCell = t => (t.stepsTotal ? `<span class="mini"><i style="width:${pct(t.stepsDone, t.stepsTotal)}%"></i></span>${t.stepsDone}/${t.stepsTotal}` : '—');
+
+function renderOverdue(tasks) {
+  const rows = tasks.filter(t => t.state === 'overdue');
+  $('#hOverdue').textContent = rows.length ? `${fmtN(rows.length)} tasks past their due date` : '';
+  table($('#tOverdue'), 'overdue', rows, [
+    { key: 'name', label: 'Task', html: taskCell, sortVal: t => t.name },
+    { key: 'dept', label: 'Department', html: t => esc(t.dept?.name || '—'), sortVal: t => t.dept?.name || '' },
+    { key: 'mgr', label: 'Task manager', html: t => esc(t.manager?.name || '—'), sortVal: t => t.manager?.name || '' },
+    { key: 'end', label: 'Due', html: t => fmtDate(t.end), sortVal: t => t.end },
+    { key: 'daysOver', label: 'Days late', num: true, html: t => `<span class="pill crit">⚠ ${t.daysOver}d</span>` },
+    { key: 'steps', label: 'Steps', num: true, html: stepsCell, sortVal: t => (t.stepsTotal ? t.stepsDone / t.stepsTotal : -1) },
+  ], ['daysOver', -1]);
+}
+function renderSoon(tasks) {
+  const rows = tasks.filter(t => !t.done && t.dueIn !== null && t.dueIn >= 0 && t.dueIn <= 14);
+  $('#hSoon').textContent = rows.length ? `${fmtN(rows.length)} tasks` : '';
+  table($('#tSoon'), 'soon', rows, [
+    { key: 'name', label: 'Task', html: taskCell, sortVal: t => t.name },
+    { key: 'dept', label: 'Dept', html: t => esc(t.dept?.name || '—'), sortVal: t => t.dept?.name || '' },
+    { key: 'dueIn', label: 'Due', num: true, html: t => `<span class="pill warn" title="${esc(fmtDate(t.end))}">${t.dueIn === 0 ? 'Today' : t.dueIn === 1 ? 'Tomorrow' : 'in ' + t.dueIn + 'd'}</span>` },
+  ], ['dueIn', 1], 15);
+}
+function renderAreas(tasks) {
+  const m = new Map();
+  for (const t of tasks) {
+    let r = m.get(t.area.id);
+    if (!r) m.set(t.area.id, (r = { project: t.project.name, tower: t.tower.name, area: t.area.name, total: 0, done: 0, overdue: 0, open: 0, last: null }));
+    r.total++; if (t.done) r.done++; else r.open++; if (t.state === 'overdue') r.overdue++;
+    if (t.doneAt && (!r.last || t.doneAt > r.last)) r.last = t.doneAt;
+  }
+  const rows = [...m.values()].map(r => ({ ...r, pct: pct(r.done, r.total) }));
+  table($('#tArea'), 'areas', rows, [
+    { key: 'project', label: 'Project' }, { key: 'tower', label: 'Tower' }, { key: 'area', label: 'Area' },
+    { key: 'total', label: 'Tasks', num: true, html: r => fmtN(r.total) },
+    { key: 'done', label: 'Done', num: true, html: r => fmtN(r.done) },
+    { key: 'open', label: 'Open', num: true, html: r => fmtN(r.open) },
+    { key: 'overdue', label: 'Overdue', num: true, html: r => (r.overdue ? `<span class="od">${fmtN(r.overdue)}</span>` : '0') },
+    { key: 'pct', label: '% complete', num: true, html: r => `<span class="mini"><i style="width:${r.pct}%"></i></span>${r.pct}%` },
+    { key: 'last', label: 'Last completion', html: r => (r.last ? fmtDate(r.last) : '—') },
+  ], ['total', -1], 30);
+}
+function renderFeed(tasks) {
+  const visible = new Set(tasks.map(t => t.id));
+  const anyFilter = F.project || F.tower || F.dept || F.contractor || F.q.trim();
+  const items = D.updates.filter(u => (anyFilter ? visible.has(u.taskId) : true)).slice(0, 60);
+  $('#feed').innerHTML = items.length ? items.map(u => {
+    const t = D.taskById.get(u.taskId), who = D.userByEmail.get(u.by)?.name || u.by || 'Unknown';
+    return `<li><span class="who">${esc(who)}</span><span class="when" title="${esc(new Date(u.at).toLocaleString('en-IN'))}">${esc(ago(u.at))}</span>
+      <div class="what">${esc(u.text)}</div>${t ? `<div class="task">${esc(t.name)} · ${loc(t)}</div>` : ''}</li>`;
+  }).join('') : '<li class="empty">No recent activity for this filter</li>';
+}
+function renderDeadlines() {
+  const t0 = today0();
+  const rows = D.deadlines.map(d => {
+    const a = D.A.get(d.areaId), tw = a && D.T.get(a.towerId), p = tw && D.P.get(tw.projectId);
+    const late = d.status !== 'COMPLETED' && d.deadline && dayOf(d.deadline) < t0;
+    return { ...d, contractor: D.C.get(d.contractorId)?.name || '—', area: a ? a.name : '—', where: [p?.name, tw?.name].filter(Boolean).join(' › '), late, projectId: p?.id, towerId: tw?.id };
+  }).filter(r => (!F.project || r.projectId === F.project) && (!F.tower || r.towerId === F.tower) && (!F.contractor || r.contractorId === F.contractor));
+  const label = { NOT_STARTED: 'Not started', IN_PROGRESS: 'In progress', COMPLETED: 'Completed' };
+  table($('#tDeadline'), 'deadlines', rows, [
+    { key: 'contractor', label: 'Contractor' },
+    { key: 'area', label: 'Area', html: r => `${esc(r.area)}<div class="loc">${esc(r.where)}</div>` },
+    { key: 'start', label: 'Start', html: r => fmtDate(r.start) },
+    { key: 'deadline', label: 'Deadline', html: r => fmtDate(r.deadline) },
+    { key: 'revisions', label: 'Revised', num: true, html: r => (r.revisions ? r.revisions + '×' : '—') },
+    { key: 'status', label: 'Status', html: r => r.status === 'COMPLETED' ? `<span class="pill good">✓ ${label[r.status]}</span>` : r.late ? `<span class="pill crit">⚠ ${label[r.status] || r.status} · past deadline</span>` : `<span class="pill">${esc(label[r.status] || r.status)}</span>` },
+  ], ['deadline', 1]);
+}
+
+// ---------- CSV ----------
+$('#btnCsv').onclick = () => {
+  if (!D) return;
+  const head = ['Project', 'Tower', 'Area', 'Sub-area', 'Task', 'Department', 'Task manager', 'Status', 'Start', 'Due', 'Completed on', 'Days late', 'Steps done', 'Steps total'];
+  const st = { done: 'Completed', overdue: 'Overdue', open: 'Open', notstarted: 'Not started' };
+  const d = iso => (iso ? new Date(iso).toLocaleDateString('en-CA') : '');
+  const lines = [head].concat(filtered().map(t => [t.project.name, t.tower.name, t.area.name, t.subArea.name, t.name, t.dept?.name || '', t.manager?.name || '', st[t.state], d(t.start), d(t.end), d(t.doneAt), t.daysOver || '', t.stepsDone, t.stepsTotal]));
+  const csv = lines.map(r => r.map(v => { v = String(v ?? ''); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
+  a.download = 'fms-tasks-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+load(false);
+setInterval(() => load(false), 5 * 60 * 1000); // auto-refresh every 5 minutes
+})();
+</script>
+</body>
+</html>
