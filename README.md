@@ -13,6 +13,9 @@ Runs locally at **http://localhost:4783**
 | Overdue | Pending tasks whose due date is before today |
 | Completed This Week | Tasks completed since Monday 00:00 |
 
+## Breakdown table
+Below the cards: every **Location › Tower › Area › Sub Area** from ASAP with Total, Completed, Pending, Overdue, This Week and % complete. ▸ expands a level; clicking a name filters the whole page to it. Follows the filters above.
+
 ## Filters
 **Location → Tower → Area → Sub Area**, cascading. Picking a lower level fills in the levels above it; changing a level clears the ones below. *Location* is the FMS project (e.g. Homeland Regalia, Homeland Global Park, CP-67). Inactive items are excluded.
 
