@@ -1,8 +1,8 @@
 'use strict';
 /**
- * Homeland FMS Dashboard: local server.
+ * Work Execution (Homeland FMS): local server.
  *
- * Serves the dashboard on its own port (default 4783) and proxies data from the
+ * Serves the page on its own port (default 4783) and proxies data from the
  * FMS PostgREST API. The API token stays on this machine (.env) and is never
  * sent to the browser.
  *
@@ -128,7 +128,7 @@ server.on('error', e => {
 
 server.listen(PORT, HOST, () => {
   const link = `http://localhost:${PORT}`;
-  console.log(`\n  Homeland FMS Dashboard  →  ${link}\n  Data source: ${API}\n  Press Ctrl+C to stop.\n`);
+  console.log(`\n  Work Execution  →  ${link}\n  Data source: ${API}\n  Press Ctrl+C to stop.\n`);
   if (process.argv.includes('--open')) {
     const cmd = process.platform === 'win32' ? `start "" "${link}"` : process.platform === 'darwin' ? `open "${link}"` : `xdg-open "${link}"`;
     exec(cmd, () => {});

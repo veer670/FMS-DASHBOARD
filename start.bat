@@ -1,5 +1,5 @@
 @echo off
-title Homeland FMS Dashboard
+title Work Execution - Homeland FMS
 cd /d "%~dp0"
 where node >nul 2>nul || (echo Node.js 18+ is required. Install it from https://nodejs.org and run this again. & pause & exit /b 1)
 if not exist .env (

@@ -1,7 +1,7 @@
 {
-  "name": "fms-dashboard",
+  "name": "fms-work-execution",
   "version": "1.0.0",
-  "description": "Homeland Group FMS dashboard: live task, tower, department and contractor progress from the ASAP FMS database",
+  "description": "Work Execution: one-page FMS dashboard (total, completed, pending, overdue, completed this week) with Location/Tower/Area/Sub Area filters",
   "main": "server.js",
   "private": true,
   "scripts": {
