@@ -53,6 +53,42 @@
   .c-overdue { --accent: var(--crit); } .c-overdue .value { color: var(--crit-text); }
   .c-week { --accent: var(--blue); }
 
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 22px; }
+  .phead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .phead h2 { margin: 0; font-size: 16px; }
+  .phead .hint { color: var(--muted); font-size: 12px; }
+  .phead .act { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .link { background: none; border: none; color: var(--blue); cursor: pointer; padding: 0; font-size: 12px; }
+  .tbl-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; table-layout: fixed; min-width: 1000px; }
+  col.c-name { width: auto; } col.c-n { width: 96px; } col.c-p { width: 170px; }
+  td:first-child { overflow: hidden; text-overflow: ellipsis; }
+  .nm > .pick, .nm > .tname { overflow: hidden; text-overflow: ellipsis; }
+  th, td { padding: 7px 12px; border-bottom: 1px solid #eceef1; text-align: left; white-space: nowrap; }
+  th { position: sticky; top: 0; background: #f8f9fb; font-size: 12px; font-weight: 600; color: var(--text-2); z-index: 1; }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.lv0 td { background: #eef2f7; font-weight: 600; }
+  tr.lv1 td { background: #f7f9fc; }
+  tr:hover td { background: #fff8ea; }
+  tr.zero td { color: var(--muted); }
+  .nm { display: flex; align-items: center; gap: 6px; }
+  .tog { width: 20px; height: 20px; border: none; background: none; cursor: pointer; color: var(--text-2); font-size: 11px; border-radius: 4px; flex: none; }
+  .tog:hover { background: #e3e6eb; }
+  .tog.leaf { visibility: hidden; }
+  .pick { background: none; border: none; padding: 0; cursor: pointer; color: inherit; font: inherit; text-align: left; }
+  .pick:hover { color: var(--blue); text-decoration: underline; }
+  .lvl { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; font-weight: 500; }
+  td .od { color: var(--crit-text); font-weight: 600; }
+  tr.task td { font-size: 12.5px; background: #fff; }
+  .tdet { display: flex; gap: 18px; color: var(--text-2); font-size: 12px; }
+  .tdet b { color: var(--text); font-weight: 500; }
+  .pill { display: inline-block; font-size: 11.5px; padding: 1px 9px; border-radius: 99px; font-weight: 600; }
+  .pill.done { background: #e6f5e6; color: var(--good-text); }
+  .pill.pend { background: #fff4dc; color: var(--warn-text); }
+  .pill.over { background: var(--crit-bg); color: var(--crit-text); }
+  .search { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 13px; min-width: 220px; }
+  .mini { display: inline-block; width: 70px; height: 6px; background: #e9edf3; border-radius: 3px; vertical-align: middle; margin-right: 8px; overflow: hidden; }
+  .mini > i { display: block; height: 100%; background: var(--good); }
   footer { margin-top: 18px; font-size: 12px; color: var(--muted); }
   .loading { opacity: .55; transition: opacity .15s; }
 
@@ -90,6 +126,21 @@
 
   <section class="cards" id="cards"></section>
 
+  <section class="panel" aria-label="Breakdown">
+    <div class="phead">
+      <h2>Location › Tower › Area › Sub Area</h2>
+      <span class="hint" id="treeHint">▸ / ▾ to expand or collapse · click a name to filter the page</span>
+      <div class="act"><input type="search" class="search" id="tq" placeholder="Search task name…"> &nbsp; <button class="link" id="expAll">Expand all</button> · <button class="link" id="colTasks">Hide tasks</button> · <button class="link" id="colAll">Collapse all</button></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <colgroup><col class="c-name"><col class="c-n"><col class="c-n"><col class="c-n"><col class="c-n"><col class="c-n"><col class="c-p"></colgroup>
+        <thead><tr><th>Name</th><th class="num">Total</th><th class="num">Completed</th><th class="num">Pending</th><th class="num">Overdue</th><th class="num">This Week</th><th>% Complete</th></tr></thead>
+        <tbody id="tree"></tbody>
+      </table>
+    </div>
+  </section>
+
   <footer>
     Pending = not yet completed · Overdue = pending and past its due date · Completed this week = completed since Monday.
     Inactive locations, towers, areas, sub-areas and tasks are excluded.
@@ -103,6 +154,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtN = n => n.toLocaleString('en-IN');
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+const DATEFMT = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtDay = ms => new Date(ms).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 
 const LEVELS = [
@@ -150,7 +202,14 @@ function prepare(d) {
     if (!l) continue;
     tasks.push({ ...t, subArea: s.id, area: a.id, tower: tw.id, location: l.id });
   }
-  return { ...lists, byId, tasks };
+  const kids = new Map(); // parent id -> children (next level down), in ASAP order
+  for (const k of ['towers', 'areas', 'subAreas']) for (const x of lists[k]) {
+    if (!kids.has(x.parent)) kids.set(x.parent, []);
+    kids.get(x.parent).push(x);
+  }
+  const tasksOf = new Map(); // sub area id -> tasks (ASAP order)
+  for (const t of tasks) { if (!tasksOf.has(t.subArea)) tasksOf.set(t.subArea, []); tasksOf.get(t.subArea).push(t); }
+  return { ...lists, byId, tasks, kids, tasksOf };
 }
 
 // Option lists cascade: each level only shows children of the levels above it.
@@ -179,19 +238,27 @@ function fillFilters() {
   });
 }
 
-LEVELS.forEach((l, i) => {
-  $(l.sel).addEventListener('change', e => {
-    F[l.key] = e.target.value;
-    // choosing a child fills in its parents; changing a parent clears children
-    if (F[l.key]) {
-      let id = F[l.key];
-      for (let k = i; k > 0; k--) { id = D.byId[LEVELS[k].list].get(id).parent; F[LEVELS[k - 1].key] = id; }
-    }
-    for (let k = i + 1; k < LEVELS.length; k++) F[LEVELS[k].key] = '';
-    render();
-  });
-});
+// choosing a level fills in its parents and clears the levels below
+function select(i, id) {
+  F[LEVELS[i].key] = id;
+  if (id) for (let k = i, cur = id; k > 0; k--) { cur = D.byId[LEVELS[k].list].get(cur).parent; F[LEVELS[k - 1].key] = cur; }
+  for (let k = i + 1; k < LEVELS.length; k++) F[LEVELS[k].key] = '';
+  render();
+}
+LEVELS.forEach((l, i) => $(l.sel).addEventListener('change', e => select(i, e.target.value)));
 $('#btnReset').onclick = () => { LEVELS.forEach(l => (F[l.key] = '')); render(); };
+
+const closed = new Set(); // everything starts expanded
+$('#expAll').onclick = () => { closed.clear(); render(); };
+$('#colTasks').onclick = () => { closed.clear(); D.subAreas.forEach(x => closed.add(x.id)); render(); };
+$('#colAll').onclick = () => { for (const k of ['locations', 'towers', 'areas', 'subAreas']) D[k].forEach(x => closed.add(x.id)); render(); };
+let tq = '';
+$('#tq').addEventListener('input', e => { tq = e.target.value.trim().toLowerCase(); render(); });
+$('#tree').addEventListener('click', e => {
+  const tog = e.target.closest('.tog'), pick = e.target.closest('.pick');
+  if (tog) { const id = tog.dataset.id; closed.has(id) ? closed.delete(id) : closed.add(id); render(); }
+  else if (pick) { select(Number(pick.dataset.lv), pick.dataset.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+});
 $('#btnRefresh').onclick = () => load(true);
 
 function render() {
@@ -225,8 +292,68 @@ function render() {
     card('c-overdue', '!', 'Overdue', overdue, pct(overdue, pending) + '% of pending', pct(overdue, pending)) +
     card('c-week', '★', 'Completed This Week', week, 'since Mon ' + fmtDay(m0));
 
+  renderTree(tasks, t => !t.done && t.end && dayOf(t.end) < t0, t => t.done && t.doneAt && new Date(t.doneAt).getTime() >= m0);
+
   const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
   $('#scope').innerHTML = 'Showing: <b>' + esc(path.length ? path.join(' › ') : 'All locations') + '</b>';
+}
+
+let renderToken = 0;
+function renderTree(tasks, isOver, isWeek) {
+  if (tq) tasks = tasks.filter(t => (t.name || '').toLowerCase().includes(tq));
+  const visible = new Set(tasks);
+  // counts for every node on each task's path
+  const st = new Map();
+  for (const t of tasks) {
+    const over = isOver(t), week = isWeek(t);
+    for (const l of LEVELS) {
+      let s = st.get(t[l.key]);
+      if (!s) st.set(t[l.key], (s = { total: 0, done: 0, over: 0, week: 0 }));
+      s.total++; if (t.done) s.done++; if (over) s.over++; if (week) s.week++;
+    }
+  }
+  // roots: the deepest selected node, or every location
+  let rootLv = 0, roots = D.locations;
+  for (let i = LEVELS.length - 1; i >= 0; i--) if (F[LEVELS[i].key]) { rootLv = i; roots = [D.byId[LEVELS[i].list].get(F[LEVELS[i].key])]; break; }
+
+  const names = ['Location', 'Tower', 'Area', 'Sub Area'];
+  const rows = [];
+  const walk = (node, lv, depth) => {
+    const s = st.get(node.id) || { total: 0, done: 0, over: 0, week: 0 };
+    const isLeafLv = lv === LEVELS.length - 1;
+    let children = isLeafLv ? (D.tasksOf.get(node.id) || []).filter(t => visible.has(t)) : D.kids.get(node.id) || [];
+    if (tq && !s.total) return; // searching: hide branches with no matching task
+    const isOpen = !closed.has(node.id) && children.length;
+    const childLabel = isLeafLv ? 'Task' : names[lv + 1];
+    const p = pct(s.done, s.total);
+    rows.push(`<tr class="lv${lv}${s.total ? '' : ' zero'}">
+      <td><div class="nm" style="padding-left:${depth * 22}px">
+        <button class="tog${children.length ? '' : ' leaf'}" data-id="${esc(node.id)}" aria-label="${isOpen ? 'Collapse' : 'Expand'}">${isOpen ? '▾' : '▸'}</button>
+        <button class="pick" data-lv="${lv}" data-id="${esc(node.id)}" title="Filter to this ${names[lv].toLowerCase()}">${esc(node.name)}</button>
+        <span class="lvl">${names[lv]}</span>${children.length ? `<span class="lvl" title="${children.length} ${childLabel.toLowerCase()}s">${children.length} ${childLabel.toLowerCase()}${children.length === 1 ? '' : 's'}</span>` : ''}</div></td>
+      <td class="num">${fmtN(s.total)}</td>
+      <td class="num">${fmtN(s.done)}</td>
+      <td class="num">${fmtN(s.total - s.done)}</td>
+      <td class="num">${s.over ? `<span class="od">${fmtN(s.over)}</span>` : '0'}</td>
+      <td class="num">${fmtN(s.week)}</td>
+      <td>${s.total ? `<span class="mini"><i style="width:${p}%"></i></span>${p}%` : '—'}</td></tr>`);
+    if (!isOpen) return;
+    if (isLeafLv) children.forEach(t => rows.push(taskRow(t, depth + 1)));
+    else children.forEach(c => walk(c, lv + 1, depth + 1));
+  };
+  const fd = iso => (iso ? DATEFMT.format(new Date(iso)) : '—');
+  const taskRow = (t, depth) => {
+    const status = t.done ? '<span class="pill done">✓ Completed</span>' : isOver(t) ? '<span class="pill over">⚠ Overdue</span>' : '<span class="pill pend">Pending</span>';
+    return `<tr class="task"><td><div class="nm" style="padding-left:${depth * 22 + 26}px" title="${esc(t.name)}"><span class="tname">${esc(t.name)}</span><span class="lvl">Task</span></div></td>
+      <td colspan="6"><div class="tdet">${status}<span>Dept: <b>${esc(t.dept || '—')}</b></span><span>Start: <b>${fd(t.start)}</b></span><span>Due: <b>${fd(t.end)}</b></span>${t.done ? `<span>Completed: <b>${fd(t.doneAt)}</b></span>` : ''}</div></td></tr>`;
+  };
+  roots.forEach(r => walk(r, rootLv, 0));
+  // first rows at once, the rest in chunks so the page stays responsive
+  const tb = $('#tree'), token = ++renderToken, FIRST = 300, CHUNK = 700;
+  tb.innerHTML = rows.length ? rows.slice(0, FIRST).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">No tasks match</td></tr>';
+  const more = i => { if (token !== renderToken || i >= rows.length) return; tb.insertAdjacentHTML('beforeend', rows.slice(i, i + CHUNK).join('')); setTimeout(() => more(i + CHUNK), 0); };
+  setTimeout(() => more(FIRST), 0);
+  $('#treeHint').textContent = `${fmtN(tasks.length)} tasks · ▸ / ▾ to expand or collapse · click a name to filter the page`;
 }
 
 load(false);

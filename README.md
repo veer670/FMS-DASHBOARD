@@ -14,7 +14,11 @@ Runs locally at **http://localhost:4783**
 | Completed This Week | Tasks completed since Monday 00:00 |
 
 ## Breakdown table
-Below the cards: every **Location › Tower › Area › Sub Area** from ASAP with Total, Completed, Pending, Overdue, This Week and % complete. ▸ expands a level; clicking a name filters the whole page to it. Follows the filters above.
+Below the cards: every **Location › Tower › Area › Sub Area › Task** from ASAP. Each level shows Total, Completed, Pending, Overdue, This Week and % complete; each task shows its status (Completed / Pending / Overdue), department, start, due and completed dates.
+
+- Opens fully expanded; ▸ / ▾ expands or collapses a level. *Hide tasks* collapses to sub-area level; *Collapse all* to locations.
+- Clicking a name filters the whole page to it. *Search task name* narrows the table to matching tasks.
+- Follows the filters above. Large lists render in chunks so the page stays responsive.
 
 ## Filters
 **Location → Tower → Area → Sub Area**, cascading. Picking a lower level fills in the levels above it; changing a level clears the ones below. *Location* is the FMS project (e.g. Homeland Regalia, Homeland Global Park, CP-67). Inactive items are excluded.
