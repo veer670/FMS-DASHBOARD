@@ -7,15 +7,16 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231F3A5F'/%3E%3Cpath d='M8 23V12l8-5 8 5v11' fill='none' stroke='%23B8863B' stroke-width='2.5'/%3E%3C/svg%3E">
 <style>
   :root {
-    --bg: #f3f4f6; --surface: #ffffff; --border: #e3e6eb;
+    --bg: #f3f4f6; --surface: #ffffff; --surface-2: #f8f9fb; --border: #e3e6eb; --grid: #eceef1;
     --text: #0b0b0b; --text-2: #52514e; --muted: #7d7c77;
     --brand: #1F3A5F; --gold: #B8863B;
-    --blue: #2a78d6; --good: #0ca30c; --good-text: #006300;
-    --warn: #fab219; --warn-text: #8a5a00; --crit: #d03b3b; --crit-text: #b42828; --crit-bg: #fdecec;
+    --blue: #2a78d6; --good: #0ca30c; --good-text: #006300; --good-bg: #e6f5e6;
+    --warn: #fab219; --warn-text: #8a5a00; --warn-bg: #fff4dc;
+    --crit: #d03b3b; --crit-text: #b42828; --crit-bg: #fdecec;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
-  button, select { font: inherit; color: inherit; }
+  button, select, input { font: inherit; color: inherit; }
 
   header { background: var(--brand); color: #fff; padding: 16px 28px; display: flex; align-items: center; gap: 14px; border-bottom: 3px solid var(--gold); }
   header svg { width: 36px; height: 36px; flex: none; }
@@ -24,23 +25,24 @@
   header .spacer { flex: 1; }
   header .meta { font-size: 12px; color: #c9d3e1; text-align: right; }
   .btn { border: 1px solid var(--border); background: var(--surface); padding: 7px 14px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
-  .btn:hover { background: #f8f9fb; }
+  .btn:hover { background: var(--surface-2); }
   header .btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.3); color: #fff; }
   header .btn:hover { background: rgba(255,255,255,.18); }
-  .btn:focus-visible, select:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
 
-  main { max-width: 1280px; margin: 0 auto; padding: 24px 28px 40px; }
+  main { max-width: 1440px; margin: 0 auto; padding: 24px 28px 40px; }
   #banner { display: none; margin-bottom: 18px; border: 1px solid var(--crit); background: var(--crit-bg); color: var(--crit-text); border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; font-size: 13px; }
 
   .filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 14px; align-items: end; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 22px; }
   .filters label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .4px; min-width: 0; }
   .filters select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text); }
-  .filters select:disabled { background: #f3f4f6; color: var(--muted); }
   .scope { font-size: 13px; color: var(--text-2); margin: -10px 0 16px 2px; }
   .scope b { color: var(--text); }
 
   .cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--accent); border-radius: 10px; padding: 18px 20px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--accent); border-radius: 10px; padding: 18px 20px; text-align: left; cursor: pointer; transition: box-shadow .12s; display: flex; flex-direction: column; justify-content: flex-start; font: inherit; color: inherit; }
+  .card:hover { box-shadow: 0 4px 14px rgba(16,24,40,.08); }
+  .card.on { box-shadow: 0 0 0 2px var(--accent); }
   .card .label { font-size: 13px; font-weight: 600; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
   .card .icon { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 13px; color: #fff; background: var(--accent); flex: none; }
   .card .value { font-size: 40px; font-weight: 700; line-height: 1.1; margin-top: 10px; font-variant-numeric: tabular-nums; }
@@ -54,41 +56,36 @@
   .c-week { --accent: var(--blue); }
 
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 22px; }
-  .phead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .phead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
   .phead h2 { margin: 0; font-size: 16px; }
   .phead .hint { color: var(--muted); font-size: 12px; }
-  .phead .act { margin-left: auto; font-size: 12px; color: var(--muted); }
-  .link { background: none; border: none; color: var(--blue); cursor: pointer; padding: 0; font-size: 12px; }
-  .tbl-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
-  table { border-collapse: collapse; width: 100%; font-size: 13px; table-layout: fixed; min-width: 1000px; }
-  col.c-name { width: auto; } col.c-n { width: 96px; } col.c-p { width: 170px; }
-  td:first-child { overflow: hidden; text-overflow: ellipsis; }
-  .nm > .pick, .nm > .tname { overflow: hidden; text-overflow: ellipsis; }
-  th, td { padding: 7px 12px; border-bottom: 1px solid #eceef1; text-align: left; white-space: nowrap; }
-  th { position: sticky; top: 0; background: #f8f9fb; font-size: 12px; font-weight: 600; color: var(--text-2); z-index: 1; }
-  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  tr.lv0 td { background: #eef2f7; font-weight: 600; }
-  tr.lv1 td { background: #f7f9fc; }
-  tr:hover td { background: #fff8ea; }
-  tr.zero td { color: var(--muted); }
-  .nm { display: flex; align-items: center; gap: 6px; }
-  .tog { width: 20px; height: 20px; border: none; background: none; cursor: pointer; color: var(--text-2); font-size: 11px; border-radius: 4px; flex: none; }
-  .tog:hover { background: #e3e6eb; }
-  .tog.leaf { visibility: hidden; }
-  .pick { background: none; border: none; padding: 0; cursor: pointer; color: inherit; font: inherit; text-align: left; }
-  .pick:hover { color: var(--blue); text-decoration: underline; }
-  .lvl { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; font-weight: 500; }
-  td .od { color: var(--crit-text); font-weight: 600; }
-  tr.task td { font-size: 12.5px; background: #fff; }
-  .tdet { display: flex; gap: 18px; color: var(--text-2); font-size: 12px; }
-  .tdet b { color: var(--text); font-weight: 500; }
-  .pill { display: inline-block; font-size: 11.5px; padding: 1px 9px; border-radius: 99px; font-weight: 600; }
-  .pill.done { background: #e6f5e6; color: var(--good-text); }
-  .pill.pend { background: #fff4dc; color: var(--warn-text); }
+  .phead .act { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--border); background: var(--surface); border-radius: 99px; padding: 4px 12px; font-size: 12.5px; cursor: pointer; }
+  .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .search { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; min-width: 220px; }
+
+  .tbl-wrap { overflow: auto; max-height: 72vh; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; table-layout: fixed; min-width: 980px; }
+  col.c-area { width: 15%; } col.c-sub { width: 15%; } col.c-task { width: 22%; } col.c-st { width: 120px; } col.c-end { width: 118px; } col.c-rem { width: auto; }
+  th, td { padding: 8px 12px; border-bottom: 1px solid var(--grid); text-align: left; vertical-align: top; }
+  th { position: sticky; top: 0; background: var(--surface-2); font-size: 12px; font-weight: 600; color: var(--text-2); z-index: 1; cursor: pointer; user-select: none; white-space: nowrap; }
+  th .arr { font-size: 10px; opacity: .7; }
+  tbody tr:nth-child(even) td { background: #fafbfc; }
+  tbody tr:hover td { background: #fff8ea; }
+  td { word-break: break-word; }
+  td .path { color: var(--muted); font-size: 11.5px; }
+  td .dept { color: var(--muted); font-size: 11.5px; }
+  td.rem { color: var(--text-2); font-size: 12.5px; }
+  td.rem .when { color: var(--muted); font-size: 11.5px; }
+  td.rem.chat { color: var(--text); }
+  td.rem.log { color: var(--muted); font-style: italic; }
+  .pill { display: inline-block; font-size: 11.5px; padding: 2px 9px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+  .pill.done { background: var(--good-bg); color: var(--good-text); }
+  .pill.pend { background: var(--warn-bg); color: var(--warn-text); }
   .pill.over { background: var(--crit-bg); color: var(--crit-text); }
-  .search { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 13px; min-width: 220px; }
-  .mini { display: inline-block; width: 70px; height: 6px; background: #e9edf3; border-radius: 3px; vertical-align: middle; margin-right: 8px; overflow: hidden; }
-  .mini > i { display: block; height: 100%; background: var(--good); }
+  .late { color: var(--crit-text); font-weight: 600; }
+  .empty { text-align: center; color: var(--muted); padding: 22px; }
+
   footer { margin-top: 18px; font-size: 12px; color: var(--muted); }
   .loading { opacity: .55; transition: opacity .15s; }
 
@@ -116,7 +113,7 @@
   <div id="banner" role="alert"></div>
 
   <section class="filters" aria-label="Filters">
-    <label>Location<select id="fLocation"></select></label>
+    <label>Project<select id="fProject"></select></label>
     <label>Tower<select id="fTower"></select></label>
     <label>Area<select id="fArea"></select></label>
     <label>Sub Area<select id="fSubArea"></select></label>
@@ -126,24 +123,27 @@
 
   <section class="cards" id="cards"></section>
 
-  <section class="panel" aria-label="Breakdown">
+  <section class="panel" aria-label="Tasks">
     <div class="phead">
-      <h2>Location › Tower › Area › Sub Area</h2>
-      <span class="hint" id="treeHint">▸ / ▾ to expand or collapse · click a name to filter the page</span>
-      <div class="act"><input type="search" class="search" id="tq" placeholder="Search task name…"> &nbsp; <button class="link" id="expAll">Expand all</button> · <button class="link" id="colTasks">Hide tasks</button> · <button class="link" id="colAll">Collapse all</button></div>
+      <h2>Tasks</h2>
+      <span class="hint" id="tHint"></span>
+      <div class="act">
+        <span id="chips"></span>
+        <input type="search" class="search" id="tq" placeholder="Search task, area, remarks…">
+      </div>
     </div>
     <div class="tbl-wrap">
       <table>
-        <colgroup><col class="c-name"><col class="c-n"><col class="c-n"><col class="c-n"><col class="c-n"><col class="c-n"><col class="c-p"></colgroup>
-        <thead><tr><th>Name</th><th class="num">Total</th><th class="num">Completed</th><th class="num">Pending</th><th class="num">Overdue</th><th class="num">This Week</th><th>% Complete</th></tr></thead>
-        <tbody id="tree"></tbody>
+        <colgroup><col class="c-area"><col class="c-sub"><col class="c-task"><col class="c-st"><col class="c-end"><col class="c-rem"></colgroup>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="rows"></tbody>
       </table>
     </div>
   </section>
 
   <footer>
-    Pending = not yet completed · Overdue = pending and past its due date · Completed this week = completed since Monday.
-    Inactive locations, towers, areas, sub-areas and tasks are excluded.
+    Pending = not yet completed · Overdue = pending and past its end date · Completed this week = completed since Monday.
+    Remarks = latest step-chat message from the site team in ASAP; tasks without chat show the latest activity-log entry in grey italics (automatic overdue reminders hidden). Inactive items are excluded.
   </footer>
 </main>
 
@@ -155,17 +155,23 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const fmtN = n => n.toLocaleString('en-IN');
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const DATEFMT = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+const fd = iso => (iso ? DATEFMT.format(new Date(iso)) : '—');
 const fmtDay = ms => new Date(ms).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+const DAY = 86400000;
 
 const LEVELS = [
-  { key: 'location', sel: '#fLocation', list: 'locations', all: 'All locations' },
-  { key: 'tower', sel: '#fTower', list: 'towers', all: 'All towers' },
-  { key: 'area', sel: '#fArea', list: 'areas', all: 'All areas' },
-  { key: 'subArea', sel: '#fSubArea', list: 'subAreas', all: 'All sub areas' },
+  { key: 'project', sel: '#fProject', list: 'projects', all: 'All projects', name: 'Project' },
+  { key: 'tower', sel: '#fTower', list: 'towers', all: 'All towers', name: 'Tower' },
+  { key: 'area', sel: '#fArea', list: 'areas', all: 'All areas', name: 'Area' },
+  { key: 'subArea', sel: '#fSubArea', list: 'subAreas', all: 'All sub areas', name: 'Sub Area' },
 ];
-const F = { location: '', tower: '', area: '', subArea: '' };
+const F = { project: '', tower: '', area: '', subArea: '' };
 let D = null;
+let statusF = '';            // '', 'done', 'pend', 'over', 'week'
+let tq = '';
+const sort = { key: 'path', dir: 1 };
 
+// ---------- data ----------
 async function load(force) {
   $('#app').classList.add('loading');
   try {
@@ -174,7 +180,6 @@ async function load(force) {
     if (!res.ok) throw body;
     D = prepare(body);
     $('#banner').style.display = 'none';
-    // drop selections that no longer exist
     LEVELS.forEach(l => { if (F[l.key] && !D.byId[l.list].has(F[l.key])) F[l.key] = ''; });
     render();
     const g = new Date(body.generatedAt);
@@ -191,54 +196,42 @@ async function load(force) {
 
 function prepare(d) {
   const live = arr => arr.filter(x => x.active);
-  const lists = { locations: live(d.locations), towers: live(d.towers), areas: live(d.areas), subAreas: live(d.subAreas) };
-  const byId = {};
-  for (const k in lists) byId[k] = new Map(lists[k].map(x => [x.id, x]));
-  // resolve each task to its full path; skip tasks under inactive/missing parents
+  const lists = { projects: live(d.projects), towers: live(d.towers), areas: live(d.areas), subAreas: live(d.subAreas) };
+  const byId = {}, pos = {};
+  for (const k in lists) { byId[k] = new Map(lists[k].map(x => [x.id, x])); lists[k].forEach((x, i) => (pos[x.id] = i)); }
   const tasks = [];
-  for (const t of d.tasks) {
-    if (!t.active) continue;
-    const s = byId.subAreas.get(t.subAreaId), a = s && byId.areas.get(s.parent), tw = a && byId.towers.get(a.parent), l = tw && byId.locations.get(tw.parent);
-    if (!l) continue;
-    tasks.push({ ...t, subArea: s.id, area: a.id, tower: tw.id, location: l.id });
-  }
-  const kids = new Map(); // parent id -> children (next level down), in ASAP order
-  for (const k of ['towers', 'areas', 'subAreas']) for (const x of lists[k]) {
-    if (!kids.has(x.parent)) kids.set(x.parent, []);
-    kids.get(x.parent).push(x);
-  }
-  const tasksOf = new Map(); // sub area id -> tasks (ASAP order)
-  for (const t of tasks) { if (!tasksOf.has(t.subArea)) tasksOf.set(t.subArea, []); tasksOf.get(t.subArea).push(t); }
-  return { ...lists, byId, tasks, kids, tasksOf };
+  d.tasks.forEach((t, i) => {
+    if (!t.active) return;
+    const s = byId.subAreas.get(t.subAreaId), a = s && byId.areas.get(s.parent), tw = a && byId.towers.get(a.parent), p = tw && byId.projects.get(tw.parent);
+    if (!p) return;
+    tasks.push({
+      ...t, project: p.id, tower: tw.id, area: a.id, subArea: s.id,
+      areaName: a.name, subName: s.name, towerName: tw.name, projectName: p.name,
+      // ASAP order: project › tower › area › sub area › task
+      ord: [pos[p.id], pos[tw.id], pos[a.id], pos[s.id], i],
+      hay: (t.name + ' ' + a.name + ' ' + s.name + ' ' + tw.name + ' ' + p.name + ' ' + t.dept + ' ' + t.remark).toLowerCase(),
+    });
+  });
+  return { ...lists, byId, tasks };
 }
 
-// Option lists cascade: each level only shows children of the levels above it.
+// ---------- filters ----------
 function optionsFor(i) {
-  const l = LEVELS[i];
-  let items = D[l.list];
-  if (i === 0) return items;
-  // nearest selected ancestor
+  const items = D[LEVELS[i].list];
   for (let j = i - 1; j >= 0; j--) {
     if (!F[LEVELS[j].key]) continue;
     const anc = F[LEVELS[j].key];
-    const parentOf = (lvl, id) => D.byId[LEVELS[lvl].list].get(id)?.parent;
-    return items.filter(x => { let id = x.id; for (let k = i; k > j; k--) id = parentOf(k, id); return id === anc; });
+    return items.filter(x => { let id = x.id; for (let k = i; k > j; k--) id = D.byId[LEVELS[k].list].get(id)?.parent; return id === anc; });
   }
   return items;
 }
-
 function fillFilters() {
   LEVELS.forEach((l, i) => {
-    const sel = $(l.sel);
-    const items = optionsFor(i);
-    // show the parent name when the level above isn't chosen, so duplicate names stay clear
     const parentList = i > 0 ? LEVELS[i - 1].list : null;
     const label = x => (i > 0 && !F[LEVELS[i - 1].key] ? `${x.name} — ${D.byId[parentList].get(x.parent)?.name || ''}` : x.name);
-    sel.innerHTML = `<option value="">${l.all}</option>` + items.map(x => `<option value="${esc(x.id)}"${x.id === F[l.key] ? ' selected' : ''}>${esc(label(x))}</option>`).join('');
+    $(l.sel).innerHTML = `<option value="">${l.all}</option>` + optionsFor(i).map(x => `<option value="${esc(x.id)}"${x.id === F[l.key] ? ' selected' : ''}>${esc(label(x))}</option>`).join('');
   });
 }
-
-// choosing a level fills in its parents and clears the levels below
 function select(i, id) {
   F[LEVELS[i].key] = id;
   if (id) for (let k = i, cur = id; k > 0; k--) { cur = D.byId[LEVELS[k].list].get(cur).parent; F[LEVELS[k - 1].key] = cur; }
@@ -246,114 +239,107 @@ function select(i, id) {
   render();
 }
 LEVELS.forEach((l, i) => $(l.sel).addEventListener('change', e => select(i, e.target.value)));
-$('#btnReset').onclick = () => { LEVELS.forEach(l => (F[l.key] = '')); render(); };
-
-const closed = new Set(); // everything starts expanded
-$('#expAll').onclick = () => { closed.clear(); render(); };
-$('#colTasks').onclick = () => { closed.clear(); D.subAreas.forEach(x => closed.add(x.id)); render(); };
-$('#colAll').onclick = () => { for (const k of ['locations', 'towers', 'areas', 'subAreas']) D[k].forEach(x => closed.add(x.id)); render(); };
-let tq = '';
-$('#tq').addEventListener('input', e => { tq = e.target.value.trim().toLowerCase(); render(); });
-$('#tree').addEventListener('click', e => {
-  const tog = e.target.closest('.tog'), pick = e.target.closest('.pick');
-  if (tog) { const id = tog.dataset.id; closed.has(id) ? closed.delete(id) : closed.add(id); render(); }
-  else if (pick) { select(Number(pick.dataset.lv), pick.dataset.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-});
+$('#btnReset').onclick = () => { LEVELS.forEach(l => (F[l.key] = '')); statusF = ''; tq = ''; $('#tq').value = ''; render(); };
 $('#btnRefresh').onclick = () => load(true);
+$('#tq').addEventListener('input', e => { tq = e.target.value.trim().toLowerCase(); renderTable(); });
 
+// ---------- status helpers ----------
+let T0 = 0, M0 = 0;
+const dayOf = iso => { const d = new Date(iso); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const isOver = t => !t.done && t.end && dayOf(t.end) < T0;
+const isWeek = t => t.done && t.doneAt && new Date(t.doneAt).getTime() >= M0;
+const STATUS = { '': () => true, done: t => t.done, pend: t => !t.done, over: isOver, week: isWeek };
+
+// ---------- render ----------
+let scoped = [];
 function render() {
   if (!D) return;
   fillFilters();
-  const tasks = D.tasks.filter(t => LEVELS.every(l => !F[l.key] || t[l.key] === F[l.key]));
-
-  const now = new Date();
-  const today = new Date(now); today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  const t0 = today.getTime(), m0 = monday.getTime();
-  const dayOf = iso => { const d = new Date(iso); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  T0 = today.getTime(); M0 = monday.getTime();
 
-  const total = tasks.length;
-  const done = tasks.filter(t => t.done).length;
-  const pending = total - done;
-  const overdue = tasks.filter(t => !t.done && t.end && dayOf(t.end) < t0).length;
-  const week = tasks.filter(t => t.done && t.doneAt && new Date(t.doneAt).getTime() >= m0).length;
+  scoped = D.tasks.filter(t => LEVELS.every(l => !F[l.key] || t[l.key] === F[l.key]));
+  const total = scoped.length, done = scoped.filter(t => t.done).length, pending = total - done;
+  const overdue = scoped.filter(isOver).length, week = scoped.filter(isWeek).length;
 
-  const card = (cls, icon, label, value, note, barPct) => `
-    <div class="card ${cls}">
+  const card = (st, cls, icon, label, value, note, barPct) => `
+    <button class="card ${cls}${statusF && statusF === st ? ' on' : ''}" data-st="${st}" title="Show these tasks in the table">
       <div class="label"><span class="icon" aria-hidden="true">${icon}</span>${label}</div>
       <div class="value">${fmtN(value)}</div>
       <div class="note">${note}</div>
       ${barPct == null ? '' : `<div class="bar"><i style="width:${barPct}%"></i></div>`}
-    </div>`;
+    </button>`;
   $('#cards').innerHTML =
-    card('c-total', '☰', 'Total Tasks', total, 'in current selection') +
-    card('c-done', '✓', 'Completed', done, pct(done, total) + '% of total', pct(done, total)) +
-    card('c-pending', '◷', 'Pending', pending, pct(pending, total) + '% of total', pct(pending, total)) +
-    card('c-overdue', '!', 'Overdue', overdue, pct(overdue, pending) + '% of pending', pct(overdue, pending)) +
-    card('c-week', '★', 'Completed This Week', week, 'since Mon ' + fmtDay(m0));
-
-  renderTree(tasks, t => !t.done && t.end && dayOf(t.end) < t0, t => t.done && t.doneAt && new Date(t.doneAt).getTime() >= m0);
+    card('', 'c-total', '☰', 'Total Tasks', total, 'in current selection') +
+    card('done', 'c-done', '✓', 'Completed', done, pct(done, total) + '% of total', pct(done, total)) +
+    card('pend', 'c-pending', '◷', 'Pending', pending, pct(pending, total) + '% of total', pct(pending, total)) +
+    card('over', 'c-overdue', '!', 'Overdue', overdue, pct(overdue, pending) + '% of pending', pct(overdue, pending)) +
+    card('week', 'c-week', '★', 'Completed This Week', week, 'since Mon ' + fmtDay(M0));
+  $('#cards').querySelectorAll('.card').forEach(c => (c.onclick = () => { statusF = statusF === c.dataset.st ? '' : c.dataset.st; render(); }));
 
   const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
-  $('#scope').innerHTML = 'Showing: <b>' + esc(path.length ? path.join(' › ') : 'All locations') + '</b>';
+  $('#scope').innerHTML = 'Showing: <b>' + esc(path.length ? path.join(' › ') : 'All projects') + '</b>';
+
+  const chipNames = [['', 'All'], ['pend', 'Pending'], ['over', 'Overdue'], ['done', 'Completed'], ['week', 'This week']];
+  $('#chips').innerHTML = chipNames.map(([k, n]) => `<button class="chip${statusF === k ? ' on' : ''}" data-st="${k}">${n}</button>`).join(' ');
+  $('#chips').querySelectorAll('.chip').forEach(c => (c.onclick = () => { statusF = c.dataset.st; render(); }));
+  renderTable();
 }
 
+// ---------- table ----------
+const COLS = [
+  { key: 'area', label: 'Area', val: t => t.areaName },
+  { key: 'sub', label: 'Sub Area', val: t => t.subName },
+  { key: 'task', label: 'Task', val: t => t.name },
+  { key: 'status', label: 'Status', val: t => (t.done ? 2 : isOver(t) ? 0 : 1) },
+  { key: 'end', label: 'End Date', val: t => t.end },
+  { key: 'rem', label: 'Remarks', val: t => t.remarkAt },  // sorts by remark date
+];
 let renderToken = 0;
-function renderTree(tasks, isOver, isWeek) {
-  if (tq) tasks = tasks.filter(t => (t.name || '').toLowerCase().includes(tq));
-  const visible = new Set(tasks);
-  // counts for every node on each task's path
-  const st = new Map();
-  for (const t of tasks) {
-    const over = isOver(t), week = isWeek(t);
-    for (const l of LEVELS) {
-      let s = st.get(t[l.key]);
-      if (!s) st.set(t[l.key], (s = { total: 0, done: 0, over: 0, week: 0 }));
-      s.total++; if (t.done) s.done++; if (over) s.over++; if (week) s.week++;
-    }
+function renderTable() {
+  let rows = scoped.filter(STATUS[statusF]);
+  if (tq) rows = rows.filter(t => t.hay.includes(tq));
+  if (sort.key === 'path') {
+    rows.sort((a, b) => { for (let i = 0; i < 5; i++) if (a.ord[i] !== b.ord[i]) return a.ord[i] - b.ord[i]; return 0; });
+  } else {
+    const c = COLS.find(c => c.key === sort.key);
+    rows.sort((a, b) => {
+      const x = c.val(a), y = c.val(b);
+      if (x == null || x === '') return 1; if (y == null || y === '') return -1;
+      return (typeof x === 'string' ? x.localeCompare(y, 'en', { numeric: true }) : x - y) * sort.dir;
+    });
   }
-  // roots: the deepest selected node, or every location
-  let rootLv = 0, roots = D.locations;
-  for (let i = LEVELS.length - 1; i >= 0; i--) if (F[LEVELS[i].key]) { rootLv = i; roots = [D.byId[LEVELS[i].list].get(F[LEVELS[i].key])]; break; }
+  $('#thead').innerHTML = COLS.map(c => `<th data-k="${c.key}">${c.label} <span class="arr">${sort.key === c.key ? (sort.dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('');
+  $('#thead').querySelectorAll('th').forEach(th => (th.onclick = () => {
+    const k = th.dataset.k;
+    if (sort.key === k) { if (sort.dir === 1) sort.dir = -1; else { sort.key = 'path'; sort.dir = 1; } } // 3rd click: back to ASAP order
+    else { sort.key = k; sort.dir = 1; }
+    renderTable();
+  }));
 
-  const names = ['Location', 'Tower', 'Area', 'Sub Area'];
-  const rows = [];
-  const walk = (node, lv, depth) => {
-    const s = st.get(node.id) || { total: 0, done: 0, over: 0, week: 0 };
-    const isLeafLv = lv === LEVELS.length - 1;
-    let children = isLeafLv ? (D.tasksOf.get(node.id) || []).filter(t => visible.has(t)) : D.kids.get(node.id) || [];
-    if (tq && !s.total) return; // searching: hide branches with no matching task
-    const isOpen = !closed.has(node.id) && children.length;
-    const childLabel = isLeafLv ? 'Task' : names[lv + 1];
-    const p = pct(s.done, s.total);
-    rows.push(`<tr class="lv${lv}${s.total ? '' : ' zero'}">
-      <td><div class="nm" style="padding-left:${depth * 22}px">
-        <button class="tog${children.length ? '' : ' leaf'}" data-id="${esc(node.id)}" aria-label="${isOpen ? 'Collapse' : 'Expand'}">${isOpen ? '▾' : '▸'}</button>
-        <button class="pick" data-lv="${lv}" data-id="${esc(node.id)}" title="Filter to this ${names[lv].toLowerCase()}">${esc(node.name)}</button>
-        <span class="lvl">${names[lv]}</span>${children.length ? `<span class="lvl" title="${children.length} ${childLabel.toLowerCase()}s">${children.length} ${childLabel.toLowerCase()}${children.length === 1 ? '' : 's'}</span>` : ''}</div></td>
-      <td class="num">${fmtN(s.total)}</td>
-      <td class="num">${fmtN(s.done)}</td>
-      <td class="num">${fmtN(s.total - s.done)}</td>
-      <td class="num">${s.over ? `<span class="od">${fmtN(s.over)}</span>` : '0'}</td>
-      <td class="num">${fmtN(s.week)}</td>
-      <td>${s.total ? `<span class="mini"><i style="width:${p}%"></i></span>${p}%` : '—'}</td></tr>`);
-    if (!isOpen) return;
-    if (isLeafLv) children.forEach(t => rows.push(taskRow(t, depth + 1)));
-    else children.forEach(c => walk(c, lv + 1, depth + 1));
+  // show Project › Tower under Area when they aren't chosen in the filters
+  const showPath = !F.tower;
+  const tr = t => {
+    const over = isOver(t);
+    const status = t.done ? `<span class="pill done" title="Completed ${fd(t.doneAt)}">✓ Completed</span>` : over ? '<span class="pill over">⚠ Overdue</span>' : '<span class="pill pend">Pending</span>';
+    const late = over ? ` <span class="late">(${Math.round((T0 - dayOf(t.end)) / DAY)}d late)</span>` : '';
+    return `<tr>
+      <td>${esc(t.areaName)}${showPath ? `<div class="path">${esc(F.project ? t.towerName : t.projectName + ' › ' + t.towerName)}</div>` : ''}</td>
+      <td>${esc(t.subName)}</td>
+      <td>${esc(t.name)}${t.dept ? `<div class="dept">${esc(t.dept)}</div>` : ''}</td>
+      <td>${status}</td>
+      <td>${fd(t.end)}${late}</td>
+      <td class="rem ${t.remarkKind}">${t.remark ? `${esc(t.remark)}<div class="when">${t.remarkKind === 'chat' ? `${esc(t.remarkBy)}${t.remarkStep ? ' · ' + esc(t.remarkStep) : ''} · ` : 'activity log · '}${fd(t.remarkAt)}</div>` : '<span class="path">—</span>'}</td></tr>`;
   };
-  const fd = iso => (iso ? DATEFMT.format(new Date(iso)) : '—');
-  const taskRow = (t, depth) => {
-    const status = t.done ? '<span class="pill done">✓ Completed</span>' : isOver(t) ? '<span class="pill over">⚠ Overdue</span>' : '<span class="pill pend">Pending</span>';
-    return `<tr class="task"><td><div class="nm" style="padding-left:${depth * 22 + 26}px" title="${esc(t.name)}"><span class="tname">${esc(t.name)}</span><span class="lvl">Task</span></div></td>
-      <td colspan="6"><div class="tdet">${status}<span>Dept: <b>${esc(t.dept || '—')}</b></span><span>Start: <b>${fd(t.start)}</b></span><span>Due: <b>${fd(t.end)}</b></span>${t.done ? `<span>Completed: <b>${fd(t.doneAt)}</b></span>` : ''}</div></td></tr>`;
-  };
-  roots.forEach(r => walk(r, rootLv, 0));
+  const html = rows.map(tr);
+  $('#tHint').textContent = `${fmtN(rows.length)} task${rows.length === 1 ? '' : 's'}` + (sort.key === 'path' ? ' · in ASAP order · click a column to sort' : '');
+
   // first rows at once, the rest in chunks so the page stays responsive
-  const tb = $('#tree'), token = ++renderToken, FIRST = 300, CHUNK = 700;
-  tb.innerHTML = rows.length ? rows.slice(0, FIRST).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">No tasks match</td></tr>';
-  const more = i => { if (token !== renderToken || i >= rows.length) return; tb.insertAdjacentHTML('beforeend', rows.slice(i, i + CHUNK).join('')); setTimeout(() => more(i + CHUNK), 0); };
+  const tb = $('#rows'), token = ++renderToken, FIRST = 300, CHUNK = 700;
+  tb.innerHTML = html.length ? html.slice(0, FIRST).join('') : '<tr><td colspan="6" class="empty">No tasks for this selection</td></tr>';
+  const more = i => { if (token !== renderToken || i >= html.length) return; tb.insertAdjacentHTML('beforeend', html.slice(i, i + CHUNK).join('')); setTimeout(() => more(i + CHUNK), 0); };
   setTimeout(() => more(FIRST), 0);
-  $('#treeHint').textContent = `${fmtN(tasks.length)} tasks · ▸ / ▾ to expand or collapse · click a name to filter the page`;
 }
 
 load(false);
