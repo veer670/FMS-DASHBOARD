@@ -45,7 +45,9 @@ node server.js --open
 Keep the window open while using the page. First time only: create `.env` from `.env.example` with the API token (or double-click `start.bat`, which asks for it).
 
 ## Look and feel
-Corporate theme in Homeland navy (#1F3A5F) and brass (#B8863B), IBM Plex Sans, shared in `public/theme.css`: navy sidebar with the page menu, a status ledger strip for the counts, segmented status filter, and status shown as a coloured dot with text. Works down to phone width.
+Corporate theme shared in `public/theme.css` and `public/theme.js`: sidebar with the page menu, a colour-tinted status ledger with icons, coloured table header, status tags, accent-marked panel titles, IBM Plex Sans. Works down to phone width.
+
+**Colour themes** (pick in the sidebar, remembered per browser): Homeland Navy (default, navy + brass), Deep Teal (teal + amber), Charcoal (charcoal + copper).
 
 ## How it works
 `server.js` (zero-dependency Node) serves `public/index.html` and `GET /api/data`, which pulls Project, Tower, Area, SubArea, Task, Department, Update and Chatmessage from PostgREST (cached 60 s; the page auto-refreshes every 5 minutes). The token stays in `.env` on this machine and is never sent to the browser.
