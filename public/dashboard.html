@@ -44,19 +44,8 @@
   .scope { font-size: 13px; color: var(--text-2); margin: -10px 0 16px 2px; }
   .scope b { color: var(--text); }
 
-  .cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--accent); border-radius: 10px; padding: 16px 18px; }
-  .card .label { font-size: 13px; font-weight: 600; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
-  .card .icon { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 13px; color: #fff; background: var(--accent); flex: none; }
-  .card .value { font-size: 34px; font-weight: 700; line-height: 1.1; margin-top: 8px; font-variant-numeric: tabular-nums; }
-  .card .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .c-total { --accent: var(--brand); }
-  .c-done { --accent: var(--good); } .c-done .value { color: var(--good-text); }
-  .c-pending { --accent: var(--warn); }
-  .c-overdue { --accent: var(--crit); } .c-overdue .value { color: var(--crit-text); }
-  .c-week { --accent: var(--blue); }
 
-  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; min-width: 0; }
   .panel.wide { grid-column: 1 / -1; }
   .phead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
@@ -100,18 +89,16 @@
   th { background: var(--surface-2); font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
   th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
   td .path { color: var(--muted); font-size: 11.5px; }
-  .pill { display: inline-block; font-size: 11.5px; padding: 2px 9px; border-radius: 99px; font-weight: 600; white-space: nowrap; background: var(--crit-bg); color: var(--crit-text); }
   .empty { text-align: center; color: var(--muted); padding: 18px; }
 
   #tip { position: fixed; pointer-events: none; background: #111; color: #fff; font-size: 12px; padding: 7px 9px; border-radius: 6px; white-space: pre-line; z-index: 50; max-width: 320px; opacity: 0; transition: opacity .08s; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
   footer { margin-top: 18px; font-size: 12px; color: var(--muted); }
   .loading { opacity: .55; transition: opacity .15s; }
 
-  @media (max-width: 1100px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } nav.tabs { margin-left: 8px; } nav.tabs a { padding: 16px 8px; } }
   @media (max-width: 800px) {
     .filters { grid-template-columns: 1fr 1fr; } .filters .btn { grid-column: 1 / -1; }
-    .cards { grid-template-columns: 1fr 1fr; } main { padding: 16px; } header { padding: 14px 16px; flex-wrap: wrap; }
+    main { padding: 16px; } header { padding: 14px 16px; flex-wrap: wrap; }
     .brow { grid-template-columns: 36% 1fr 120px; }
   }
 </style>
@@ -141,8 +128,6 @@
   </section>
   <div class="scope" id="scope"></div>
 
-  <section class="cards" id="cards"></section>
-
   <section class="grid">
     <div class="panel wide">
       <div class="phead"><h2>Status split</h2><span class="hint">share of tasks in the current selection</span></div>
@@ -167,15 +152,10 @@
       <div class="phead"><h2>Overdue ageing</h2><span class="hint">pending tasks past their end date, by days late</span></div>
       <div id="chAge"></div>
     </div>
-
-    <div class="panel wide">
-      <div class="phead"><h2>Most overdue tasks</h2><span class="hint" id="hTop"></span><div class="act"><a class="link" href="/" data-carry data-status="over">Open all overdue in Work Execution →</a></div></div>
-      <div id="tTop"></div>
-    </div>
   </section>
 
   <footer>
-    Pending = not yet completed · Overdue = pending and past its end date · Completed this week = completed since Monday.
+    Pending = not yet completed · Overdue = pending and past its end date.
     Location is ASAP's "Tower" level. Inactive items are excluded.
   </footer>
 </main>
@@ -203,7 +183,6 @@ const F = { project: '', tower: '', area: '', subArea: '' };
 (() => { const q = new URLSearchParams(location.search); for (const k in F) if (q.get(k)) F[k] = q.get(k); })();
 document.querySelectorAll('a[data-carry]').forEach(a => a.addEventListener('click', () => {
   const q = new URLSearchParams(); for (const k in F) if (F[k]) q.set(k, F[k]);
-  if (a.dataset.status) q.set('status', a.dataset.status);
   a.href = a.getAttribute('href').split('?')[0] + (q.toString() ? '?' + q : '');
 }));
 let D = null;
@@ -292,7 +271,6 @@ $('#btnRefresh').onclick = () => load(true);
 let T0 = 0, M0 = 0;
 const dayOf = iso => { const d = new Date(iso); d.setHours(0, 0, 0, 0); return d.getTime(); };
 const isOver = t => !t.done && t.end && dayOf(t.end) < T0;
-const isWeek = t => t.done && t.doneAt && new Date(t.doneAt).getTime() >= M0;
 const daysLate = t => Math.round((T0 - dayOf(t.end)) / DAY);
 
 // ---------- render ----------
@@ -305,15 +283,7 @@ function render() {
 
   const tasks = D.tasks.filter(t => LEVELS.every(l => !F[l.key] || t[l.key] === F[l.key]));
   const total = tasks.length, done = tasks.filter(t => t.done).length, pending = total - done;
-  const overdue = tasks.filter(isOver).length, week = tasks.filter(isWeek).length;
-
-  const card = (cls, icon, label, value, note) => `<div class="card ${cls}"><div class="label"><span class="icon" aria-hidden="true">${icon}</span>${label}</div><div class="value">${fmtN(value)}</div><div class="note">${note}</div></div>`;
-  $('#cards').innerHTML =
-    card('c-total', '☰', 'Total Tasks', total, 'in current selection') +
-    card('c-done', '✓', 'Completed', done, pct(done, total) + '% of total') +
-    card('c-pending', '◷', 'Pending', pending, pct(pending, total) + '% of total') +
-    card('c-overdue', '!', 'Overdue', overdue, pct(overdue, pending) + '% of pending') +
-    card('c-week', '★', 'Completed This Week', week, 'since Mon ' + fmtDay(M0));
+  const overdue = tasks.filter(isOver).length;
 
   const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
   $('#scope').innerHTML = 'Showing: <b>' + esc(path.length ? path.join(' › ') : 'All projects') + '</b>';
@@ -323,7 +293,6 @@ function render() {
   renderDepts(tasks);
   renderWeekly(tasks);
   renderAgeing(tasks);
-  renderTop(tasks);
 }
 
 function renderSplit(done, pendOnTime, overdue, total) {
@@ -422,14 +391,6 @@ function renderAgeing(tasks) {
   columns($('#chAge'), B.map((b, i) => ({ label: b[0], value: counts[i], tip: `${b[0]} late\n${counts[i]} task${counts[i] === 1 ? '' : 's'}` })),
     { aria: 'Overdue tasks by days late', cls: 'age', values: true, note: total ? `${fmtN(total)} overdue tasks` : 'No overdue tasks in this selection 🎉' });
 }
-function renderTop(tasks) {
-  const rows = tasks.filter(isOver).sort((a, b) => daysLate(b) - daysLate(a)).slice(0, 10);
-  $('#hTop').textContent = rows.length ? 'top 10 by days late' : '';
-  $('#tTop').innerHTML = rows.length ? `<div class="tbl-wrap"><table><thead><tr><th>Task</th><th>Location › Area › Sub Area</th><th>Department</th><th>End Date</th><th class="num">Days late</th><th>Remarks</th></tr></thead><tbody>${
-    rows.map(t => `<tr><td>${esc(t.name)}</td><td>${esc(t.towerName)} › ${esc(t.areaName)} › ${esc(t.subName)}${F.project ? '' : `<div class="path">${esc(t.projectName)}</div>`}</td><td>${esc(t.dept || '—')}</td><td>${fd(t.end)}</td><td class="num"><span class="pill">⚠ ${daysLate(t)}d</span></td><td>${t.remark ? esc(t.remark) : '<span class="path">—</span>'}</td></tr>`).join('')
-  }</tbody></table></div>` : '<div class="empty">No overdue tasks in this selection 🎉</div>';
-}
-
 load(false);
 setInterval(() => load(false), 5 * 60 * 1000); // auto-refresh every 5 minutes
 })();
