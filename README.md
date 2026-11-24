@@ -2,7 +2,7 @@
 
 Two pages (tabs in the header) showing work execution status from the Homeland Group **FMS (ASAP)** database, read through its read-only PostgREST API.
 
-Runs locally at **http://localhost:4783**
+Runs on your PC at **http://localhost:4783**, or online on **Vercel** (see *Put it online* below).
 
 ## Sign in and users
 Every page needs a user ID and password.
@@ -10,7 +10,8 @@ Every page needs a user ID and password.
 - **First run:** open http://localhost:4783. With no accounts yet, the sign-in page asks you to create the **admin account**.
 - **Admins** see a **Users** page in the menu: the **Add user** button opens the form to create a user ID and password; the table lets you reset a password, make someone admin or user, disable or delete an account. Disabling, deleting or resetting a password signs that person out straight away. You cannot remove your own admin access, and there is always at least one admin.
 - **Everyone** can *Sign out* from the sidebar. Passwords are set and reset by an admin on the Users page.
-- Accounts are stored in `data/users.json` on this computer (git-ignored). Passwords are stored only as salted scrypt hashes. Sign-ins last 12 hours (`SESSION_HOURS` in `.env`); restarting the server signs everyone out. 8 wrong passwords from one computer lock sign-in for 10 minutes.
+- On your PC, accounts are stored in `data/users.json` (git-ignored). Online, they are stored in an Upstash Redis database connected to the Vercel project. Passwords are stored only as salted scrypt hashes. Sign-ins last 12 hours (`SESSION_HOURS`). 8 wrong passwords from one IP lock sign-in for 10 minutes.
+- Online, creating the first admin also needs the **setup code** (`SETUP_CODE` in Vercel), so nobody else who finds the link can become admin.
 - The server listens on this computer only (`HOST=127.0.0.1`). To let colleagues on the office network open it, set `HOST=0.0.0.0` in `.env` and share `http://<this-computer's-IP>:4783`.
 
 ## Pages
@@ -54,6 +55,19 @@ node server.js --open
 ```
 Keep the window open while using the page. First time only: create `.env` from `.env.example` with the API token (or double-click `start.bat`, which asks for it).
 
+## Put it online (Vercel)
+The repo is ready for Vercel (`vercel.json` + `api/index.js`); every address goes through one function that checks the sign-in first.
+
+1. Push to GitHub (`git push -u origin main`). Vercel redeploys on each push.
+2. Vercel > the project > **Settings > Environment Variables**, add for *Production* and *Preview*:
+   - `FMS_API_TOKEN` = the read-only ASAP token (same as in `.env`)
+   - `SETUP_CODE` = any private word you choose (only needed to create the first admin)
+3. Vercel > the project > **Storage** > **Create Database** > **Upstash for Redis** (free plan) > connect it to this project. Keep the default variable prefix; it adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
+4. **Deployments** > the latest one > **Redeploy** (new settings only apply after a redeploy).
+5. Open the site: create the admin with the setup code, then add users on the Users page.
+
+Accounts made on your PC are not copied online; create them again on the online Users page. If the data does not load, `Logs` in Vercel shows the reason (for example the ASAP server refusing Vercel's IP).
+
 ## Look and feel
 **Onyx & Gold** theme, matched to the Homeland logo gold (#B38750): charcoal sidebar with the Homeland logo, gold accents and progress bars, charcoal table header, status tags, IBM Plex Sans. The sign-in page uses the same charcoal and gold. All colours live in `public/theme.css`. Works down to phone width.
 
@@ -62,4 +76,4 @@ Keep the window open while using the page. First time only: create `.env` from `
 (`public/hero.jpg`, `hero.svg`, `side-skyline.svg`, `logo-light.png` and `theme.js` are from earlier designs and are not used.)
 
 ## How it works
-`server.js` (zero-dependency Node) serves `public/index.html` and `GET /api/data`, which pulls Project, Tower, Area, SubArea, Task, Department, Update and Chatmessage from PostgREST (cached 60 s; the page auto-refreshes every 5 minutes). The token stays in `.env` on this machine and is never sent to the browser.
+`lib/app.js` (zero-dependency Node) does the work: `server.js` runs it on your PC, `api/index.js` runs it on Vercel. It serves `public/index.html` and `GET /api/data`, which pulls Project, Tower, Area, SubArea, Task, Department, Update and Chatmessage from PostgREST (cached 60 s; the page auto-refreshes every 5 minutes). The token stays in `.env` (or Vercel's Environment Variables) and is never sent to the browser.
