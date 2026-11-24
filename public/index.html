@@ -182,7 +182,7 @@ async function load(force) {
   } catch (e) {
     const b = $('#banner');
     b.style.display = 'block';
-    b.textContent = 'Could not load FMS data.\n\n' + (e.error || e.message || String(e)) + (e.detail ? '\n' + JSON.stringify(e.detail, null, 2) : '') + '\n\nCheck the PowerShell window running server.js for details.';
+    b.textContent = 'Could not load FMS data.\n\n' + (e.error || e.message || String(e)) + (e.detail ? '\n' + JSON.stringify(e.detail, null, 2) : '') + '\n\nOn your PC: see the PowerShell window running server.js. Online: see Logs in Vercel.';
     $('#meta').className = 'fresh err'; $('#meta').innerHTML = '<span class="live"></span>Could not load data';
   } finally {
     $('#app').classList.remove('loading');
