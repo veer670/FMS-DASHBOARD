@@ -25,19 +25,28 @@
 
   /* progress bars */
   .bars { display: flex; flex-direction: column; gap: 11px; }
-  .brow { display: grid; grid-template-columns: minmax(110px, 30%) 1fr 150px; align-items: center; gap: 14px; }
+  .brow { display: grid; grid-template-columns: minmax(120px, 37%) 1fr 150px; align-items: center; gap: 14px; }
   .brow.click { cursor: pointer; }
-  .brow .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .brow .lbl { display: flex; align-items: center; min-width: 0; font-size: 13px; }
+  .brow .lbl .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .brow .lbl small { color: var(--muted); }
-  .brow.click:hover .lbl { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+  .brow.click:hover .lbl .nm { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
   .track { height: 12px; background: var(--track); border-radius: 3px; overflow: hidden; }
   .fill { height: 100%; background: linear-gradient(90deg, var(--chart-2), var(--chart)); border-radius: 0 3px 3px 0; }
   .brow .num { font-size: 12.5px; color: var(--slate); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .brow .num b { color: var(--ink); font-weight: 600; }
   .od { color: var(--over); }
-  .brow.sel .lbl { font-weight: 600; color: var(--brand); }
-  .brow.sel .lbl::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; background: var(--accent); border: 1.5px solid var(--brand); vertical-align: 1px; }
+  /* the chosen row: gold band, bold name, "Selected" tag; the other rows step back */
+  .brow { padding: 5px 10px; margin: 0 -10px; border-left: 3px solid transparent; border-radius: 0 6px 6px 0; transition: opacity .15s, background .15s; }
+  .brow.sel { background: #FBF3E4; border-left-color: var(--accent); box-shadow: inset 0 0 0 1px #EBD9B8; }
+  .brow.sel .lbl { font-weight: 700; color: var(--ink); }
+  .brow.sel .lbl .tag { flex: none; margin-left: 8px; padding: 1px 7px; font-size: 10.5px; font-weight: 600; color: #fff; background: var(--accent); border-radius: 10px; vertical-align: 1px; }
   .brow.sel .fill { background: var(--accent); }
+  .brow.sel .num b { color: #8A6A3A; }
+  .bars.has-sel .brow:not(.sel) { opacity: .5; }
+  .bars.has-sel .brow:not(.sel):hover { opacity: 1; }
+  .panel.has-sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .pick { display: inline-block; padding: 1px 9px; margin-left: 2px; background: #FBF3E4; color: #8A6A3A; border: 1px solid #EBD9B8; border-radius: 12px; font-weight: 700; }
 
   /* charts */
   svg text { fill: var(--slate); font-size: 12.5px; font-family: var(--font); }
@@ -253,16 +262,22 @@ function render() {
 }
 
 function bars(el, rows, opt = {}) {
-  if (!rows.length) { el.innerHTML = '<div class="empty">No tasks in this selection</div>'; return; }
+  const panel = el.closest('.panel');
+  if (!rows.length) { el.innerHTML = '<div class="empty">No tasks in this selection</div>'; el.classList.remove('has-sel'); if (panel) panel.classList.remove('has-sel'); return; }
   const limit = opt.all ? rows.length : (opt.limit || 10);
-  el.innerHTML = rows.slice(0, limit).map(r => {
+  const shown = rows.slice(0, limit);
+  const chosen = rows.find(r => r.selected);
+  if (chosen && !shown.includes(chosen)) shown.push(chosen); // keep the chosen row visible even past the top 10
+  el.innerHTML = shown.map(r => {
     const p = pct(r.done, r.total);
     const tipTxt = `${r.label}${r.sub ? ', ' + r.sub : ''}\nCompleted ${r.done} of ${r.total} (${p}%)\nPending ${r.total - r.done}, overdue ${r.overdue}`;
     return `<div class="brow${opt.onClick ? ' click' : ''}${r.selected ? ' sel' : ''}" data-id="${esc(r.id)}" data-tip="${esc(tipTxt)}">
-      <div class="lbl">${esc(r.label)}${r.sub ? ` <small>${esc(r.sub)}</small>` : ''}</div>
+      <div class="lbl"><span class="nm">${esc(r.label)}${r.sub ? ` <small>${esc(r.sub)}</small>` : ''}</span>${r.selected ? '<span class="tag">Selected</span>' : ''}</div>
       <div class="track"><div class="fill" style="width:${p}%"></div></div>
       <div class="num"><b>${p}%</b>&nbsp; ${fmtN(r.done)} of ${fmtN(r.total)}${r.overdue ? `, <span class="od">${fmtN(r.overdue)} late</span>` : ''}</div></div>`;
   }).join('');
+  el.classList.toggle('has-sel', !!chosen);
+  if (panel) panel.classList.toggle('has-sel', !!chosen);
   if (opt.onClick) el.querySelectorAll('.brow').forEach(b => (b.onclick = () => opt.onClick(b.dataset.id)));
   if (opt.toggle) {
     opt.toggle.innerHTML = rows.length > (opt.limit || 10) ? `<button class="link">${opt.all ? 'Show top ' + (opt.limit || 10) : 'Show all ' + rows.length}</button>` : '';
@@ -289,7 +304,7 @@ function renderBreakdown(tasks) {
     .sort((a, b) => D.pos[a.id] - D.pos[b.id]);
   $('#hBreak').textContent = 'Progress by ' + L.name.toLowerCase();
   $('#hintBreak').textContent = lv ? 'Click a location to focus on it' : 'Click a project to see its locations';
-  if (lv) $('#hBreak').textContent = 'Locations in ' + D.byId.projects.get(F.project).name;
+  if (lv) $('#hBreak').innerHTML = 'Locations in <span class="pick">' + esc(D.byId.projects.get(F.project).name) + '</span>';
   bars($('#chBreak'), rows, {
     onClick: id => select(lv, id),
     all: UI.breakAll, limit: 10, toggle: $('#actBreak'), onToggle: () => { UI.breakAll = !UI.breakAll; render(); },
@@ -344,7 +359,8 @@ function renderAreas(tasks) {
     .sort((a, b) => sub ? D.pos[a.id] - D.pos[b.id]
       : (D.pos[D.byId.areas.get(a.id)?.parent] ?? 0) - (D.pos[D.byId.areas.get(b.id)?.parent] ?? 0) || D.pos[a.id] - D.pos[b.id]);
   const where = F.tower ? D.byId.towers.get(F.tower).name : F.project ? D.byId.projects.get(F.project).name : '';
-  $('#hArea').textContent = sub ? 'Sub areas in ' + D.byId.areas.get(F.area).name : where ? 'Areas in ' + where : 'Progress by area';
+  const pick = n => '<span class="pick">' + esc(n) + '</span>';
+  $('#hArea').innerHTML = sub ? 'Sub areas in ' + pick(D.byId.areas.get(F.area).name) : where ? 'Areas in ' + pick(where) : 'Progress by area';
   $('#hintArea').textContent = sub ? 'Click a sub area to focus on it' : 'Click an area to see its sub areas';
   bars($('#chArea'), rows, {
     onClick: id => select(sub ? 3 : 2, id),
