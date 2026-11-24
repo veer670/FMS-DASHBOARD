@@ -68,7 +68,7 @@
 
     const menu = document.querySelector('.menu');
     if (u.role === 'admin' && menu && !menu.querySelector('a[href="users.html"]')) {
-      menu.insertAdjacentHTML('beforeend', `<a href="users.html"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="7" r="3"/><path d="M2.5 16.5c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M13 4.5a2.8 2.8 0 0 1 0 5.2M15.5 12.5c1 .7 1.7 2 2 4"/></svg><span>Users</span></a>`);
+      menu.insertAdjacentHTML('beforeend', `<a href="users.html"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm7.5 0a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM9 13c-3.4 0-7 1.7-7 4.6V20h14v-2.4C16 14.7 12.4 13 9 13zm7.5 0c-.6 0-1.2.1-1.8.2 1.4 1 2.3 2.4 2.3 4.4V20H22v-2.6c0-2.6-3-4.4-5.5-4.4z"/></svg><span>Users</span></a>`);
     }
 
     const box = document.getElementById('who');
