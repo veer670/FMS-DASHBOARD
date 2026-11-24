@@ -1,6 +1,5 @@
-/* Homeland FMS: shared corporate theme (Work Execution + Dashboard)
-   Two colour themes, chosen in the sidebar: Blueprint (default) and Homeland Navy. */
-:root, html[data-theme="navy"] {
+/* Homeland FMS: shared corporate theme (Homeland Navy) */
+:root {
   --side: #10223A;          /* sidebar */
   --side-2: #1A3354;        /* sidebar hover / active */
   --side-ink: #C3CEDD;
@@ -44,10 +43,11 @@ button, select, input { font: inherit; color: inherit; }
 /* ---------- shell ---------- */
 .shell { display: grid; grid-template-columns: var(--side-w) minmax(0, 1fr); min-height: 100vh; }
 .side { background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
-.brand { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 20px 18px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.07); background: linear-gradient(180deg, rgba(255,255,255,.05), transparent); }
-.brand img { width: 112px; height: auto; display: block; }
+.brand { display: flex; flex-direction: column; align-items: center; padding: 34px 20px 26px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.08); background: radial-gradient(120% 90% at 50% 0%, rgba(201,151,63,.14), transparent 70%); }
+.brand img { width: 148px; height: auto; display: block; filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
+.brand i { display: block; width: 36px; height: 1.5px; background: var(--accent); opacity: .8; margin: 18px 0 12px; }
 .brand b { display: block; color: #fff; font-size: 16px; font-weight: 600; letter-spacing: .2px; line-height: 1.2; }
-.brand span { display: block; color: var(--side-ink); font-size: 11.5px; letter-spacing: 1.6px; line-height: 1.3; opacity: .85; }
+.brand span { display: block; color: var(--side-ink); font-size: 11px; font-weight: 500; letter-spacing: 3px; line-height: 1.3; opacity: .8; }
 .menu { display: flex; flex-direction: column; padding: 14px 10px; gap: 2px; }
 .menu a { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: var(--radius); color: var(--side-ink); text-decoration: none; font-weight: 500; position: relative; }
 .menu a svg { width: 18px; height: 18px; flex: none; opacity: .8; }
@@ -66,12 +66,6 @@ button, select, input { font: inherit; color: inherit; }
 .who-act { display: flex; gap: 14px; margin-top: 10px; }
 .link-side { background: none; border: 0; padding: 0; color: var(--side-ink); font-size: 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .link-side:hover { color: #fff; }
-.themes { margin-bottom: 14px; }
-.themes > span { display: block; margin-bottom: 7px; }
-.themes div { display: flex; gap: 8px; }
-.themes button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,.18); cursor: pointer; padding: 0; background: linear-gradient(135deg, var(--a) 0 55%, var(--b) 55% 100%); }
-.themes button:hover { border-color: rgba(255,255,255,.5); }
-.themes button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px var(--side), 0 0 0 4px rgba(255,255,255,.35); }
 
 .main { min-width: 0; display: flex; flex-direction: column; }
 .top { background: var(--surface); border-bottom: 1px solid var(--rule); box-shadow: inset 0 3px 0 var(--accent); padding: 18px 32px 16px; display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 10; }
@@ -139,9 +133,10 @@ footer.notes p { margin: 0 0 2px; }
 @media (max-width: 960px) {
   .shell { grid-template-columns: 1fr; }
   .side { position: static; height: auto; flex-direction: row; align-items: center; }
-  .brand { border-bottom: none; padding: 10px 16px; }
-  .brand img { width: auto; height: 34px; }
-  .brand span { display: none; }
+  .brand { border-bottom: none; }
+  .brand { padding: 10px 16px; background: none; flex-direction: row; }
+  .brand img { width: auto; height: 36px; }
+  .brand i, .brand span { display: none; }
   .menu { flex-direction: row; padding: 8px; margin-left: auto; }
   .menu a.on::before { display: none; }
   .side-foot { display: none; }
@@ -152,92 +147,3 @@ footer.notes p { margin: 0 0 2px; }
 }
 @media (max-width: 520px) { .filters { grid-template-columns: 1fr; } .menu a span { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
-
-/* ---------- title block (shown in the Blueprint theme) ---------- */
-.tblock { display: none; }
-
-/* =====================================================================
-   BLUEPRINT: the page as a construction drawing sheet
-   ===================================================================== */
-html[data-theme="blueprint"] {
-  --side: #0E3A66; --side-2: #164C82; --side-ink: #D3E2F3;
-  --brand: #123A63; --brand-2: #1E5A96;
-  --accent: #F2C14E;          /* highlighter amber */
-  --ink-line: #123A63;
-  --canvas: #F4F7FB;
-  --chart: #1E5A96; --chart-2: #9CBBE0;
-  --hover: #E7EFF9; --tint: #F7FAFD;
-  --rule: #C9D6E5; --rule-soft: #E2EAF3;
-  --radius: 2px;
-  --cond: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", var(--font);
-}
-html[data-theme="blueprint"] body {
-  background-color: var(--canvas);
-  background-image:
-    linear-gradient(rgba(18,58,99,.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(18,58,99,.07) 1px, transparent 1px),
-    linear-gradient(rgba(18,58,99,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(18,58,99,.035) 1px, transparent 1px);
-  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
-  background-attachment: fixed;
-}
-/* blueprint sidebar */
-html[data-theme="blueprint"] .side {
-  background-color: var(--side);
-  background-image:
-    linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px),
-    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-  background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
-  border-right: 3px double rgba(255,255,255,.35);
-}
-html[data-theme="blueprint"] .brand { background: none; border-bottom: 1px dashed rgba(255,255,255,.3); }
-html[data-theme="blueprint"] .brand b { font-family: var(--cond); font-size: 22px; font-weight: 600; letter-spacing: 1.2px; }
-html[data-theme="blueprint"] .brand span { color: var(--accent); letter-spacing: .3px; }
-html[data-theme="blueprint"] .menu a { border-radius: 2px; border: 1px solid transparent; }
-html[data-theme="blueprint"] .menu a:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.25); }
-html[data-theme="blueprint"] .menu a.on { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.55); }
-html[data-theme="blueprint"] .menu a.on::before { background: var(--accent); }
-html[data-theme="blueprint"] .side-foot { border-top: 1px dashed rgba(255,255,255,.3); }
-
-/* header as a drawing title block */
-html[data-theme="blueprint"] .top { background: rgba(255,255,255,.92); backdrop-filter: blur(2px); box-shadow: none; border-bottom: 2px solid var(--ink-line); padding-top: 14px; padding-bottom: 14px; }
-html[data-theme="blueprint"] .top h1 { font-family: var(--cond); font-size: 30px; font-weight: 600; letter-spacing: .6px; color: var(--ink-line); line-height: 1.05; }
-html[data-theme="blueprint"] .crumb { display: none; }
-html[data-theme="blueprint"] .fresh { display: none; }
-html[data-theme="blueprint"] .tblock { display: grid; grid-template-columns: minmax(150px, 1.4fr) minmax(130px, 1.2fr) 172px 104px; margin: 0 0 0 28px; border: 1.5px solid var(--ink-line); background: #fff; }
-html[data-theme="blueprint"] .tblock > div { padding: 5px 12px 6px; border-right: 1px solid var(--ink-line); min-width: 0; }
-html[data-theme="blueprint"] .tblock > div:last-child { border-right: 0; background: var(--ink-line); color: #fff; }
-html[data-theme="blueprint"] .tblock dt { font-size: 10.5px; color: var(--slate); letter-spacing: .4px; }
-html[data-theme="blueprint"] .tblock > div:last-child dt { color: #BCD0E6; }
-html[data-theme="blueprint"] .tblock dd { margin: 0; font-family: var(--cond); font-size: 17px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-line); }
-html[data-theme="blueprint"] .tblock > div:last-child dd { color: #fff; }
-html[data-theme="blueprint"] .btn { border-radius: 2px; }
-html[data-theme="blueprint"] #btnRefresh { border-color: var(--ink-line); color: var(--ink-line); }
-
-/* filters: drafting fields */
-html[data-theme="blueprint"] .filters select { border-radius: 2px; border-color: #AFC2D8; background-color: #fff; }
-html[data-theme="blueprint"] .filters select.set { border-color: var(--ink-line); box-shadow: inset 0 -3px 0 var(--accent); }
-
-/* panels with crop marks at the corners */
-html[data-theme="blueprint"] .panel { border-radius: 0; border: 1px solid #AFC2D8; box-shadow: none; position: relative; background: rgba(255,255,255,.96); }
-html[data-theme="blueprint"] .panel::before, html[data-theme="blueprint"] .panel::after,
-html[data-theme="blueprint"] .ledger::before, html[data-theme="blueprint"] .ledger::after {
-  content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none; border: 0 solid var(--ink-line);
-}
-html[data-theme="blueprint"] .panel::before, html[data-theme="blueprint"] .ledger::before { top: -5px; left: -5px; border-top-width: 2px; border-left-width: 2px; }
-html[data-theme="blueprint"] .panel::after, html[data-theme="blueprint"] .ledger::after { bottom: -5px; right: -5px; border-bottom-width: 2px; border-right-width: 2px; }
-html[data-theme="blueprint"] .phead h2 { font-family: var(--cond); font-size: 20px; font-weight: 600; letter-spacing: .4px; color: var(--ink-line); }
-html[data-theme="blueprint"] .phead h2::before { width: 10px; height: 10px; border-radius: 0; background: var(--accent); border: 1.5px solid var(--ink-line); }
-html[data-theme="blueprint"] .link { color: var(--brand-2); }
-html[data-theme="blueprint"] #tip { border-radius: 2px; background: var(--ink-line); }
-@media (max-width: 1200px) {
-  html[data-theme="blueprint"] .tblock { grid-template-columns: 1fr 1fr 172px 104px; }
-}
-@media (max-width: 960px) {
-  html[data-theme="blueprint"] .tblock { order: 3; width: 100%; margin: 6px 0 0; grid-template-columns: 1fr 1fr; }
-  html[data-theme="blueprint"] .tblock > div:nth-child(2) { border-right: 0; }
-  html[data-theme="blueprint"] .tblock > div:nth-child(-n+2) { border-bottom: 1px solid var(--ink-line); }
-  html[data-theme="blueprint"] .side { border-right: 0; border-bottom: 3px double rgba(255,255,255,.35); }
-}

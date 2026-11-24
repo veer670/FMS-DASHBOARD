@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
-<script>try { document.documentElement.dataset.theme = (['blueprint', 'navy'].includes(localStorage.getItem('fms-theme')) ? localStorage.getItem('fms-theme') : 'blueprint'); } catch (e) { document.documentElement.dataset.theme = 'blueprint'; }</script>
 <title>Users · Homeland FMS</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
@@ -18,13 +17,11 @@
   table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; min-width: 720px; }
   th, td { padding: 10px 14px; border-bottom: 1px solid var(--rule-soft); text-align: left; vertical-align: middle; }
   th { background: var(--brand); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; border-bottom: 2px solid var(--accent); }
-  html[data-theme="blueprint"] th { font-family: var(--cond); font-size: 14px; letter-spacing: .5px; }
   tbody tr:nth-child(even) td { background: var(--tint); }
   td .sub { color: var(--muted); font-size: 12px; }
   .tag { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 99px; }
   .tag.admin { background: #FBF3E4; color: #8A5A00; } .tag.user { background: var(--hover); color: var(--brand); }
   .tag.on { background: var(--done-bg); color: var(--done); } .tag.off { background: var(--hold-bg); color: var(--hold); }
-  html[data-theme="blueprint"] .tag { border-radius: 2px; border: 1.5px solid currentColor; background: #fff; }
   .acts { display: flex; flex-wrap: wrap; gap: 6px; }
   .acts .btn { padding: 4px 10px; font-size: 12px; }
   .you { font-size: 11px; color: var(--muted); margin-left: 6px; }
@@ -36,6 +33,7 @@
 <aside class="side">
   <div class="brand">
     <img src="logo.png" alt="Homeland">
+    <i aria-hidden="true"></i>
     <span>FIELD MANAGEMENT</span>
   </div>
   <nav class="menu" aria-label="Pages">
@@ -43,7 +41,7 @@
     <a href="/" data-carry><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M6.5 7.5h7M6.5 10.5h7M6.5 13.5h4"/></svg><span>Work Execution</span></a>
     <a href="users.html" class="on" aria-current="page"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="7" r="3"/><path d="M2.5 16.5c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M13 4.5a2.8 2.8 0 0 1 0 5.2M15.5 12.5c1 .7 1.7 2 2 4"/></svg><span>Users</span></a>
   </nav>
-  <div class="side-foot"><div class="who" id="who"></div><div class="themes"><span>Colour theme</span><div id="themes"></div></div>Live data from <b>ASAP</b><br>Refreshes every 5 minutes</div>
+  <div class="side-foot"><div class="who" id="who"></div>Live data from <b>ASAP</b><br>Refreshes every 5 minutes</div>
 </aside>
 <div class="main">
   <header class="top">
@@ -86,7 +84,6 @@
 </div>
 </div>
 
-<script src="theme.js"></script>
 <script src="session.js"></script>
 <script>
 (() => {

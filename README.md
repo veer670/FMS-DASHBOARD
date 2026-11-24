@@ -55,11 +55,7 @@ node server.js --open
 Keep the window open while using the page. First time only: create `.env` from `.env.example` with the API token (or double-click `start.bat`, which asks for it).
 
 ## Look and feel
-Homeland logo in the sidebar and on the sign-in page. Corporate theme shared in `public/theme.css` and `public/theme.js`: sidebar with the page menu, a colour-tinted status ledger with icons, coloured table header, status tags, accent-marked panel titles, IBM Plex Sans. Works down to phone width.
-
-**Colour themes** (pick in the sidebar, remembered per browser): **Blueprint** (default) and **Homeland Navy**.
-- **Blueprint**: the page as a construction drawing sheet: grid paper, blueprint sidebar, a drawing title block in the header (Project, Location, Updated, Sheet), crop-mark panel corners, Barlow Condensed numerals, stamped status tags, dimension-line progress bars.
-- **Homeland Navy**: navy and brass.
+Homeland Navy theme with the Homeland logo in the sidebar and on the sign-in page, shared in `public/theme.css`: navy sidebar with the page menu, a tinted status ledger with icons, navy table header, status tags, IBM Plex Sans. Works down to phone width. (`public/theme.js` is no longer used.)
 
 ## How it works
 `server.js` (zero-dependency Node) serves `public/index.html` and `GET /api/data`, which pulls Project, Tower, Area, SubArea, Task, Department, Update and Chatmessage from PostgREST (cached 60 s; the page auto-refreshes every 5 minutes). The token stays in `.env` on this machine and is never sent to the browser.
