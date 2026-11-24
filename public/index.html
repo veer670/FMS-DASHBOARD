@@ -62,6 +62,8 @@
   .phead .act { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .chip { border: 1px solid var(--border); background: var(--surface); border-radius: 99px; padding: 4px 12px; font-size: 12.5px; cursor: pointer; }
   .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn.export { background: #1d6f42; border-color: #1d6f42; color: #fff; font-size: 13px; padding: 6px 14px; }
+  .btn.export:hover { background: #185c37; }
   .search { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; min-width: 220px; }
 
   .tbl-wrap { overflow: auto; max-height: 72vh; border: 1px solid var(--border); border-radius: 8px; }
@@ -114,7 +116,7 @@
 
   <section class="filters" aria-label="Filters">
     <label>Project<select id="fProject"></select></label>
-    <label>Tower<select id="fTower"></select></label>
+    <label>Location<select id="fTower"></select></label>
     <label>Area<select id="fArea"></select></label>
     <label>Sub Area<select id="fSubArea"></select></label>
     <button class="btn" id="btnReset">Reset</button>
@@ -130,6 +132,7 @@
       <div class="act">
         <span id="chips"></span>
         <input type="search" class="search" id="tq" placeholder="Search task, area, remarks…">
+        <button class="btn export" id="btnExport" title="Download the tasks shown in the table as an Excel file">⤓ Export Excel</button>
       </div>
     </div>
     <div class="tbl-wrap">
@@ -161,7 +164,7 @@ const DAY = 86400000;
 
 const LEVELS = [
   { key: 'project', sel: '#fProject', list: 'projects', all: 'All projects', name: 'Project' },
-  { key: 'tower', sel: '#fTower', list: 'towers', all: 'All towers', name: 'Tower' },
+  { key: 'tower', sel: '#fTower', list: 'towers', all: 'All locations', name: 'Location' },
   { key: 'area', sel: '#fArea', list: 'areas', all: 'All areas', name: 'Area' },
   { key: 'subArea', sel: '#fSubArea', list: 'subAreas', all: 'All sub areas', name: 'Sub Area' },
 ];
@@ -207,7 +210,7 @@ function prepare(d) {
     tasks.push({
       ...t, project: p.id, tower: tw.id, area: a.id, subArea: s.id,
       areaName: a.name, subName: s.name, towerName: tw.name, projectName: p.name,
-      // ASAP order: project › tower › area › sub area › task
+      // ASAP order: project › location (ASAP 'Tower') › area › sub area › task
       ord: [pos[p.id], pos[tw.id], pos[a.id], pos[s.id], i],
       hay: (t.name + ' ' + a.name + ' ' + s.name + ' ' + tw.name + ' ' + p.name + ' ' + t.dept + ' ' + t.remark).toLowerCase(),
     });
@@ -296,7 +299,7 @@ const COLS = [
   { key: 'end', label: 'End Date', val: t => t.end },
   { key: 'rem', label: 'Remarks', val: t => t.remarkAt },  // sorts by remark date
 ];
-let renderToken = 0;
+let renderToken = 0, shownRows = [];
 function renderTable() {
   let rows = scoped.filter(STATUS[statusF]);
   if (tq) rows = rows.filter(t => t.hay.includes(tq));
@@ -318,7 +321,7 @@ function renderTable() {
     renderTable();
   }));
 
-  // show Project › Tower under Area when they aren't chosen in the filters
+  // show Project › Location under Area when they aren't chosen in the filters
   const showPath = !F.tower;
   const tr = t => {
     const over = isOver(t);
@@ -332,6 +335,7 @@ function renderTable() {
       <td>${fd(t.end)}${late}</td>
       <td class="rem ${t.remarkKind}">${t.remark ? `${esc(t.remark)}<div class="when">${t.remarkKind === 'chat' ? `${esc(t.remarkBy)}${t.remarkStep ? ' · ' + esc(t.remarkStep) : ''} · ` : 'activity log · '}${fd(t.remarkAt)}</div>` : '<span class="path">—</span>'}</td></tr>`;
   };
+  shownRows = rows;
   const html = rows.map(tr);
   $('#tHint').textContent = `${fmtN(rows.length)} task${rows.length === 1 ? '' : 's'}` + (sort.key === 'path' ? ' · in ASAP order · click a column to sort' : '');
 
@@ -341,6 +345,122 @@ function renderTable() {
   const more = i => { if (token !== renderToken || i >= html.length) return; tb.insertAdjacentHTML('beforeend', html.slice(i, i + CHUNK).join('')); setTimeout(() => more(i + CHUNK), 0); };
   setTimeout(() => more(FIRST), 0);
 }
+
+// ---------- Excel export (.xlsx, no libraries) ----------
+const XL = (() => {
+  const enc = new TextEncoder();
+  const CRC = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  // minimal ZIP writer (store, no compression)
+  function zip(files) {
+    const parts = [], central = []; let off = 0;
+    const u16 = v => [v & 255, (v >>> 8) & 255], u32 = v => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+    for (const [name, text] of files) {
+      const nb = enc.encode(name), data = enc.encode(text), crc = crc32(data);
+      const head = [...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nb.length), ...u16(0)];
+      parts.push(new Uint8Array(head), nb, data);
+      central.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nb.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nb);
+      off += head.length + nb.length + data.length;
+    }
+    const csize = central.reduce((a, b) => a + b.length, 0);
+    return new Blob([...parts, ...central, new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(csize), ...u32(off), ...u16(0)])],
+      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  const x = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  const colName = i => { let s = ''; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  // styles: 0 normal, 1 header, 2 date, 3 title, 4 subtitle, 5 completed, 6 pending, 7 overdue, 8 wrap, 9 number
+  const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="1"><numFmt numFmtId="164" formatCode="dd-mmm-yyyy"/></numFmts>
+<fonts count="7"><font><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="14"/><color rgb="FF1F3A5F"/><name val="Calibri"/></font><font><i/><sz val="10"/><color rgb="FF7D7C77"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FF166B3A"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FF8A5A00"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FFB42828"/><name val="Calibri"/></font></fonts>
+<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F3A5F"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6F5E6"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF4DC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDECEC"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFCBD4DF"/></left><right style="thin"><color rgb="FFCBD4DF"/></right><top style="thin"><color rgb="FFCBD4DF"/></top><bottom style="thin"><color rgb="FFCBD4DF"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="10">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="4" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
+<xf numFmtId="0" fontId="5" fillId="4" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
+<xf numFmtId="0" fontId="6" fillId="5" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="1" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>
+</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  // build a one-sheet workbook. cols: [{label, width}], rows: arrays of {v, s, t:'d'|'n'|'s'}
+  function workbook(sheetName, title, subtitle, cols, rows) {
+    const HR = 4; // header row number
+    const cell = (c, r, o) => {
+      const ref = colName(c) + r;
+      if (o == null) return '';
+      if (o.v == null || o.v === '') return `<c r="${ref}" s="${o.s || 0}"/>`; // empty but bordered
+      if (o.t === 'n' || o.t === 'd') return `<c r="${ref}" s="${o.s || 0}"><v>${o.v}</v></c>`;
+      return `<c r="${ref}" s="${o.s || 0}" t="inlineStr"><is><t xml:space="preserve">${x(o.v)}</t></is></c>`;
+    };
+    let sd = `<row r="1" ht="22" customHeight="1">${cell(0, 1, { v: title, s: 3 })}</row><row r="2">${cell(0, 2, { v: subtitle, s: 4 })}</row>`;
+    sd += `<row r="${HR}" ht="20" customHeight="1">${cols.map((c, i) => cell(i, HR, { v: c.label, s: 1 })).join('')}</row>`;
+    rows.forEach((row, ri) => { const r = HR + 1 + ri; sd += `<row r="${r}">${row.map((o, ci) => cell(ci, r, o)).join('')}</row>`; });
+    const last = colName(cols.length - 1), lastRow = HR + Math.max(rows.length, 1);
+    const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane ySplit="${HR}" topLeftCell="A${HR + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+<cols>${cols.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width}" customWidth="1"/>`).join('')}</cols>
+<sheetData>${sd}</sheetData>
+<autoFilter ref="A${HR}:${last}${lastRow}"/>
+<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
+<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>
+<headerFooter><oddFooter>&amp;L${x(sheetName)}&amp;RPage &amp;P of &amp;N</oddFooter></headerFooter>
+</worksheet>`;
+    const sn = x(sheetName.slice(0, 31));
+    return zip([
+      ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+      ['_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+      ['xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${sn}" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${sn}'!$A$${HR}:$${last}$${lastRow}</definedName><definedName name="_xlnm.Print_Titles" localSheetId="0">'${sn}'!$${HR}:$${HR}</definedName></definedNames></workbook>`],
+      ['xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+      ['xl/styles.xml', STYLES],
+      ['xl/worksheets/sheet1.xml', sheet],
+    ]);
+  }
+  return { workbook };
+})();
+
+// Excel serial date for the local calendar day
+const xlDate = iso => { if (!iso) return null; const d = new Date(iso); return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY) + 25569); };
+
+$('#btnExport').onclick = () => {
+  if (!D) return;
+  const rows = shownRows;
+  const cols = [
+    { label: 'S.No', width: 6 }, { label: 'Project', width: 22 }, { label: 'Location', width: 20 }, { label: 'Area', width: 22 }, { label: 'Sub Area', width: 20 },
+    { label: 'Task', width: 30 }, { label: 'Department', width: 14 }, { label: 'Status', width: 12 }, { label: 'Start Date', width: 12 }, { label: 'End Date', width: 12 },
+    { label: 'Days Late', width: 9 }, { label: 'Completed On', width: 13 }, { label: 'Remarks', width: 48 }, { label: 'Remark By', width: 16 }, { label: 'Remark Date', width: 12 },
+  ];
+  const data = rows.map((t, i) => {
+    const over = isOver(t);
+    const st = t.done ? { v: 'Completed', s: 5 } : over ? { v: 'Overdue', s: 7 } : { v: 'Pending', s: 6 };
+    const d = iso => ({ v: xlDate(iso), s: 2, t: 'd' });
+    return [
+      { v: i + 1, s: 9, t: 'n' }, { v: t.projectName }, { v: t.towerName }, { v: t.areaName }, { v: t.subName },
+      { v: t.name, s: 8 }, { v: t.dept }, st, d(t.start), d(t.end),
+      over ? { v: Math.round((T0 - dayOf(t.end)) / DAY), s: 9, t: 'n' } : { s: 0 }, t.done ? d(t.doneAt) : { s: 2 },
+      { v: t.remark, s: 8 }, { v: t.remarkKind === 'chat' ? t.remarkBy : t.remark ? 'Activity log' : '' }, d(t.remarkAt),
+    ].map(o => (o.s == null ? { ...o, s: 0 } : o));
+  });
+  const scope = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name).join(' › ') || 'All projects';
+  const stName = { '': '', done: 'Completed', pend: 'Pending', over: 'Overdue', week: 'Completed this week' }[statusF];
+  const now = new Date();
+  const sub = `${scope}${stName ? ' · ' + stName : ''}${tq ? ' · search "' + tq + '"' : ''} · ${rows.length} tasks · exported ${DATEFMT.format(now)} ${now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
+  const blob = XL.workbook('Work Execution', 'Work Execution — Homeland Group FMS', sub, cols, data);
+  const a = document.createElement('a');
+  const safe = scope.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+  a.href = URL.createObjectURL(blob);
+  a.download = `Work-Execution_${safe}_${now.toISOString().slice(0, 10)}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
 
 load(false);
 setInterval(() => load(false), 5 * 60 * 1000); // auto-refresh every 5 minutes

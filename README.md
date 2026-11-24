@@ -5,7 +5,7 @@ One-page dashboard of work execution status from the Homeland Group **FMS (ASAP)
 Runs locally at **http://localhost:4783**
 
 ## Filters
-**Project → Tower → Area → Sub Area** (ASAP's own levels), cascading. Picking a lower level fills in the levels above it; changing a level clears the ones below. Inactive items are excluded.
+**Project → Location → Area → Sub Area**, cascading. *Location* is ASAP's "Tower" level (e.g. Basements, Flat Work, Lobbies Work). Picking a lower level fills in the levels above it; changing a level clears the ones below. Inactive items are excluded.
 
 ## Cards
 | Card | Meaning |
@@ -24,6 +24,9 @@ Columns: **Area · Sub Area · Task · Status · End Date · Remarks** — every
 - **Status**: ✓ Completed / Pending / ⚠ Overdue (with days late).
 - **Remarks**: the latest step-chat message the site team typed in ASAP (with who and which step). Tasks without chat show the latest ASAP activity-log entry in grey italics; automatic overdue reminders are hidden.
 - Status chips (All / Pending / Overdue / Completed / This week), search box, click a column header to sort (third click returns to ASAP order).
+
+## Export
+**⤓ Export Excel** downloads exactly the tasks currently shown in the table (filters, status chip and search applied) as a formatted `.xlsx`: title and selection line, navy header row with filters, frozen header, coloured status, real Excel dates, A4 landscape print setup with page numbers. Columns: S.No, Project, Location, Area, Sub Area, Task, Department, Status, Start Date, End Date, Days Late, Completed On, Remarks, Remark By, Remark Date.
 
 ## Run it (Windows PowerShell)
 Requires **Node.js 18+**. No `npm install` needed.
