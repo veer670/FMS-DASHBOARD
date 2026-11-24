@@ -1,8 +1,14 @@
-# Work Execution — Homeland FMS
+# Work Execution & Dashboard — Homeland FMS
 
-One-page dashboard of work execution status from the Homeland Group **FMS (ASAP)** database, read through its read-only PostgREST API.
+Two pages (tabs in the header) showing work execution status from the Homeland Group **FMS (ASAP)** database, read through its read-only PostgREST API.
 
 Runs locally at **http://localhost:4783**
+
+## Pages
+- **Work Execution** (`/`): cards + task table with export.
+- **Dashboard** (`/dashboard.html`): the same filters and cards, plus status split, progress by the next level down (Project → Location → Area → Sub Area; click a bar to drill in), progress by department, tasks completed per week (12 weeks), overdue ageing (1–7 / 8–30 / 31–60 / 61–90 / 90+ days late) and the 10 most overdue tasks.
+
+The filters travel with you when you switch tabs; *Open all overdue in Work Execution* opens the table pre-filtered to overdue tasks.
 
 ## Filters
 **Project → Location → Area → Sub Area**, cascading. *Location* is ASAP's "Tower" level (e.g. Basements, Flat Work, Lobbies Work). Picking a lower level fills in the levels above it; changing a level clears the ones below. Inactive items are excluded.

@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · Homeland FMS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231F3A5F'/%3E%3Cpath d='M8 23V12l8-5 8 5v11' fill='none' stroke='%23B8863B' stroke-width='2.5'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f3f4f6; --surface: #ffffff; --surface-2: #f8f9fb; --border: #e3e6eb; --grid: #eceef1;
+    --text: #0b0b0b; --text-2: #52514e; --muted: #7d7c77;
+    --brand: #1F3A5F; --gold: #B8863B;
+    --blue: #2a78d6; --track: #e9edf3;
+    --good: #0ca30c; --good-text: #006300; --good-bg: #e6f5e6;
+    --warn: #fab219; --warn-text: #8a5a00; --warn-bg: #fff4dc;
+    --serious: #ec835a; --crit: #d03b3b; --crit-text: #b42828; --crit-bg: #fdecec;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+
+  header { background: var(--brand); color: #fff; padding: 16px 28px; display: flex; align-items: center; gap: 14px; border-bottom: 3px solid var(--gold); }
+  header svg { width: 36px; height: 36px; flex: none; }
+  header h1 { margin: 0; font-size: 22px; font-weight: 700; }
+  header .sub { color: #d9c29a; font-size: 12px; }
+  header .spacer { flex: 1; }
+  header .meta { font-size: 12px; color: #c9d3e1; text-align: right; }
+  nav.tabs { display: flex; gap: 4px; margin-left: 28px; align-self: stretch; align-items: stretch; }
+  nav.tabs a { display: flex; align-items: center; padding: 16px 16px; margin: -16px 0 -19px; color: #c9d3e1; text-decoration: none; font-weight: 600; font-size: 14px; border-bottom: 3px solid transparent; }
+  nav.tabs a:hover { color: #fff; }
+  nav.tabs a.on { color: #fff; border-bottom-color: var(--gold); }
+  .btn { border: 1px solid var(--border); background: var(--surface); padding: 7px 14px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { background: var(--surface-2); }
+  header .btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.3); color: #fff; }
+  header .btn:hover { background: rgba(255,255,255,.18); }
+  .btn:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+  main { max-width: 1440px; margin: 0 auto; padding: 24px 28px 40px; }
+  #banner { display: none; margin-bottom: 18px; border: 1px solid var(--crit); background: var(--crit-bg); color: var(--crit-text); border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; font-size: 13px; }
+
+  .filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 14px; align-items: end; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 22px; }
+  .filters label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .4px; min-width: 0; }
+  .filters select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text); }
+  .scope { font-size: 13px; color: var(--text-2); margin: -10px 0 16px 2px; }
+  .scope b { color: var(--text); }
+
+  .cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--accent); border-radius: 10px; padding: 16px 18px; }
+  .card .label { font-size: 13px; font-weight: 600; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
+  .card .icon { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 13px; color: #fff; background: var(--accent); flex: none; }
+  .card .value { font-size: 34px; font-weight: 700; line-height: 1.1; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .card .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .c-total { --accent: var(--brand); }
+  .c-done { --accent: var(--good); } .c-done .value { color: var(--good-text); }
+  .c-pending { --accent: var(--warn); }
+  .c-overdue { --accent: var(--crit); } .c-overdue .value { color: var(--crit-text); }
+  .c-week { --accent: var(--blue); }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+  .panel.wide { grid-column: 1 / -1; }
+  .phead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .phead h2 { margin: 0; font-size: 15px; }
+  .phead .hint { color: var(--muted); font-size: 12px; }
+  .phead .act { margin-left: auto; }
+  .link { background: none; border: none; color: var(--blue); cursor: pointer; padding: 0; font-size: 12px; }
+
+  /* progress bars */
+  .bars { display: flex; flex-direction: column; gap: 10px; }
+  .brow { display: grid; grid-template-columns: minmax(110px, 30%) 1fr 168px; align-items: center; gap: 12px; }
+  .brow.click { cursor: pointer; }
+  .brow .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .brow .lbl small { color: var(--muted); }
+  .brow.click:hover .lbl { color: var(--blue); }
+  .track { height: 12px; background: var(--track); border-radius: 4px; overflow: hidden; }
+  .fill { height: 100%; background: var(--blue); border-radius: 0 4px 4px 0; }
+  .brow .num { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .brow .num b { color: var(--text); }
+  .od { color: var(--crit-text); font-weight: 600; }
+
+  /* status split */
+  .split { display: flex; height: 26px; border-radius: 6px; overflow: hidden; gap: 2px; background: var(--surface); }
+  .split > div { min-width: 0; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: var(--text-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .legend b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+  /* charts */
+  svg text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+  .col { fill: var(--blue); }
+  .col-hit { fill: transparent; }
+  .col-hit:hover { fill: rgba(42,120,214,.06); }
+  .age { fill: var(--crit); }
+
+  /* table */
+  .tbl-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 12px; border-bottom: 1px solid var(--grid); text-align: left; vertical-align: top; }
+  th { background: var(--surface-2); font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td .path { color: var(--muted); font-size: 11.5px; }
+  .pill { display: inline-block; font-size: 11.5px; padding: 2px 9px; border-radius: 99px; font-weight: 600; white-space: nowrap; background: var(--crit-bg); color: var(--crit-text); }
+  .empty { text-align: center; color: var(--muted); padding: 18px; }
+
+  #tip { position: fixed; pointer-events: none; background: #111; color: #fff; font-size: 12px; padding: 7px 9px; border-radius: 6px; white-space: pre-line; z-index: 50; max-width: 320px; opacity: 0; transition: opacity .08s; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  footer { margin-top: 18px; font-size: 12px; color: var(--muted); }
+  .loading { opacity: .55; transition: opacity .15s; }
+
+  @media (max-width: 1100px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } nav.tabs { margin-left: 8px; } nav.tabs a { padding: 16px 8px; } }
+  @media (max-width: 800px) {
+    .filters { grid-template-columns: 1fr 1fr; } .filters .btn { grid-column: 1 / -1; }
+    .cards { grid-template-columns: 1fr 1fr; } main { padding: 16px; } header { padding: 14px 16px; flex-wrap: wrap; }
+    .brow { grid-template-columns: 36% 1fr 120px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="rgba(255,255,255,.08)"/><path d="M8 23V12l8-5 8 5v11" fill="none" stroke="#B8863B" stroke-width="2.5"/><path d="M13 23v-6h6v6" fill="none" stroke="#fff" stroke-width="2"/></svg>
+  <div>
+    <h1>Dashboard</h1>
+    <div class="sub">Homeland Group · FMS</div>
+  </div>
+  <nav class="tabs" aria-label="Pages"><a href="/" data-carry>Work Execution</a><a href="dashboard.html" class="on" aria-current="page">Dashboard</a></nav>
+  <div class="spacer"></div>
+  <div class="meta" id="meta">Loading…</div>
+  <button class="btn" id="btnRefresh" title="Fetch fresh data from the FMS">↻ Refresh</button>
+</header>
+
+<main id="app">
+  <div id="banner" role="alert"></div>
+
+  <section class="filters" aria-label="Filters">
+    <label>Project<select id="fProject"></select></label>
+    <label>Location<select id="fTower"></select></label>
+    <label>Area<select id="fArea"></select></label>
+    <label>Sub Area<select id="fSubArea"></select></label>
+    <button class="btn" id="btnReset">Reset</button>
+  </section>
+  <div class="scope" id="scope"></div>
+
+  <section class="cards" id="cards"></section>
+
+  <section class="grid">
+    <div class="panel wide">
+      <div class="phead"><h2>Status split</h2><span class="hint">share of tasks in the current selection</span></div>
+      <div class="split" id="split"></div>
+      <div class="legend" id="splitLegend"></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2 id="hBreak">Progress by location</h2><span class="hint">% of tasks completed · click a bar to drill down</span><div class="act" id="actBreak"></div></div>
+      <div class="bars" id="chBreak"></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h2>Progress by department</h2><span class="hint">% of tasks completed</span></div>
+      <div class="bars" id="chDept"></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Tasks completed per week</h2><span class="hint">last 12 weeks</span></div>
+      <div id="chWeekly"></div>
+    </div>
+    <div class="panel">
+      <div class="phead"><h2>Overdue ageing</h2><span class="hint">pending tasks past their end date, by days late</span></div>
+      <div id="chAge"></div>
+    </div>
+
+    <div class="panel wide">
+      <div class="phead"><h2>Most overdue tasks</h2><span class="hint" id="hTop"></span><div class="act"><a class="link" href="/" data-carry data-status="over">Open all overdue in Work Execution →</a></div></div>
+      <div id="tTop"></div>
+    </div>
+  </section>
+
+  <footer>
+    Pending = not yet completed · Overdue = pending and past its end date · Completed this week = completed since Monday.
+    Location is ASAP's "Tower" level. Inactive items are excluded.
+  </footer>
+</main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtN = n => n.toLocaleString('en-IN');
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+const DATEFMT = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+const fd = iso => (iso ? DATEFMT.format(new Date(iso)) : '—');
+const fmtDay = ms => new Date(ms).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+const DAY = 86400000;
+
+const LEVELS = [
+  { key: 'project', sel: '#fProject', list: 'projects', all: 'All projects', name: 'Project', plural: 'projects' },
+  { key: 'tower', sel: '#fTower', list: 'towers', all: 'All locations', name: 'Location', plural: 'locations' },
+  { key: 'area', sel: '#fArea', list: 'areas', all: 'All areas', name: 'Area', plural: 'areas' },
+  { key: 'subArea', sel: '#fSubArea', list: 'subAreas', all: 'All sub areas', name: 'Sub Area', plural: 'sub areas' },
+];
+const F = { project: '', tower: '', area: '', subArea: '' };
+(() => { const q = new URLSearchParams(location.search); for (const k in F) if (q.get(k)) F[k] = q.get(k); })();
+document.querySelectorAll('a[data-carry]').forEach(a => a.addEventListener('click', () => {
+  const q = new URLSearchParams(); for (const k in F) if (F[k]) q.set(k, F[k]);
+  if (a.dataset.status) q.set('status', a.dataset.status);
+  a.href = a.getAttribute('href').split('?')[0] + (q.toString() ? '?' + q : '');
+}));
+let D = null;
+const UI = { breakAll: false };
+
+// ---------- tooltip ----------
+const tip = $('#tip');
+document.addEventListener('mousemove', e => {
+  const el = e.target.closest && e.target.closest('[data-tip]');
+  if (!el) { tip.style.opacity = 0; return; }
+  tip.textContent = el.dataset.tip; tip.style.opacity = 1;
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+});
+
+// ---------- data ----------
+async function load(force) {
+  $('#app').classList.add('loading');
+  try {
+    const res = await fetch('api/data' + (force ? '?refresh=1' : ''));
+    const body = await res.json().catch(() => ({ error: 'Invalid response from local server (HTTP ' + res.status + ')' }));
+    if (!res.ok) throw body;
+    D = prepare(body);
+    $('#banner').style.display = 'none';
+    LEVELS.forEach(l => { if (F[l.key] && !D.byId[l.list].has(F[l.key])) F[l.key] = ''; });
+    render();
+    const g = new Date(body.generatedAt);
+    $('#meta').innerHTML = 'Updated ' + esc(g.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })) + '<br>' + esc(g.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
+  } catch (e) {
+    const b = $('#banner');
+    b.style.display = 'block';
+    b.textContent = 'Could not load FMS data.\n\n' + (e.error || e.message || String(e)) + (e.detail ? '\n' + JSON.stringify(e.detail, null, 2) : '') + '\n\nCheck the PowerShell window running server.js for details.';
+    $('#meta').textContent = 'Load failed';
+  } finally {
+    $('#app').classList.remove('loading');
+  }
+}
+
+function prepare(d) {
+  const live = arr => arr.filter(x => x.active);
+  const lists = { projects: live(d.projects), towers: live(d.towers), areas: live(d.areas), subAreas: live(d.subAreas) };
+  const byId = {}, pos = {};
+  for (const k in lists) { byId[k] = new Map(lists[k].map(x => [x.id, x])); lists[k].forEach((x, i) => (pos[x.id] = i)); }
+  const tasks = [];
+  for (const t of d.tasks) {
+    if (!t.active) continue;
+    const s = byId.subAreas.get(t.subAreaId), a = s && byId.areas.get(s.parent), tw = a && byId.towers.get(a.parent), p = tw && byId.projects.get(tw.parent);
+    if (!p) continue;
+    tasks.push({ ...t, project: p.id, tower: tw.id, area: a.id, subArea: s.id, areaName: a.name, subName: s.name, towerName: tw.name, projectName: p.name });
+  }
+  return { ...lists, byId, pos, tasks };
+}
+
+// ---------- filters ----------
+function optionsFor(i) {
+  const items = D[LEVELS[i].list];
+  for (let j = i - 1; j >= 0; j--) {
+    if (!F[LEVELS[j].key]) continue;
+    const anc = F[LEVELS[j].key];
+    return items.filter(x => { let id = x.id; for (let k = i; k > j; k--) id = D.byId[LEVELS[k].list].get(id)?.parent; return id === anc; });
+  }
+  return items;
+}
+function fillFilters() {
+  LEVELS.forEach((l, i) => {
+    const parentList = i > 0 ? LEVELS[i - 1].list : null;
+    const label = x => (i > 0 && !F[LEVELS[i - 1].key] ? `${x.name} — ${D.byId[parentList].get(x.parent)?.name || ''}` : x.name);
+    $(l.sel).innerHTML = `<option value="">${l.all}</option>` + optionsFor(i).map(x => `<option value="${esc(x.id)}"${x.id === F[l.key] ? ' selected' : ''}>${esc(label(x))}</option>`).join('');
+  });
+}
+function select(i, id) {
+  F[LEVELS[i].key] = id;
+  if (id) for (let k = i, cur = id; k > 0; k--) { cur = D.byId[LEVELS[k].list].get(cur).parent; F[LEVELS[k - 1].key] = cur; }
+  for (let k = i + 1; k < LEVELS.length; k++) F[LEVELS[k].key] = '';
+  UI.breakAll = false;
+  render();
+}
+LEVELS.forEach((l, i) => $(l.sel).addEventListener('change', e => select(i, e.target.value)));
+$('#btnReset').onclick = () => { LEVELS.forEach(l => (F[l.key] = '')); UI.breakAll = false; render(); };
+$('#btnRefresh').onclick = () => load(true);
+
+// ---------- status helpers ----------
+let T0 = 0, M0 = 0;
+const dayOf = iso => { const d = new Date(iso); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const isOver = t => !t.done && t.end && dayOf(t.end) < T0;
+const isWeek = t => t.done && t.doneAt && new Date(t.doneAt).getTime() >= M0;
+const daysLate = t => Math.round((T0 - dayOf(t.end)) / DAY);
+
+// ---------- render ----------
+function render() {
+  if (!D) return;
+  fillFilters();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  T0 = today.getTime(); M0 = monday.getTime();
+
+  const tasks = D.tasks.filter(t => LEVELS.every(l => !F[l.key] || t[l.key] === F[l.key]));
+  const total = tasks.length, done = tasks.filter(t => t.done).length, pending = total - done;
+  const overdue = tasks.filter(isOver).length, week = tasks.filter(isWeek).length;
+
+  const card = (cls, icon, label, value, note) => `<div class="card ${cls}"><div class="label"><span class="icon" aria-hidden="true">${icon}</span>${label}</div><div class="value">${fmtN(value)}</div><div class="note">${note}</div></div>`;
+  $('#cards').innerHTML =
+    card('c-total', '☰', 'Total Tasks', total, 'in current selection') +
+    card('c-done', '✓', 'Completed', done, pct(done, total) + '% of total') +
+    card('c-pending', '◷', 'Pending', pending, pct(pending, total) + '% of total') +
+    card('c-overdue', '!', 'Overdue', overdue, pct(overdue, pending) + '% of pending') +
+    card('c-week', '★', 'Completed This Week', week, 'since Mon ' + fmtDay(M0));
+
+  const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
+  $('#scope').innerHTML = 'Showing: <b>' + esc(path.length ? path.join(' › ') : 'All projects') + '</b>';
+
+  renderSplit(done, pending - overdue, overdue, total);
+  renderBreakdown(tasks);
+  renderDepts(tasks);
+  renderWeekly(tasks);
+  renderAgeing(tasks);
+  renderTop(tasks);
+}
+
+function renderSplit(done, pendOnTime, overdue, total) {
+  const seg = [
+    ['Completed', done, 'var(--good)'],
+    ['Pending (on time / no end date)', pendOnTime, 'var(--warn)'],
+    ['Overdue', overdue, 'var(--crit)'],
+  ];
+  $('#split').innerHTML = total ? seg.filter(s => s[1]).map(([n, v, c]) => `<div style="flex:${v};background:${c}" data-tip="${esc(`${n}\n${fmtN(v)} tasks (${pct(v, total)}%)`)}"></div>`).join('') : '<div style="flex:1;background:var(--track)"></div>';
+  $('#splitLegend').innerHTML = seg.map(([n, v, c]) => `<span><i style="background:${c}"></i>${n} <b>${fmtN(v)}</b> (${pct(v, total)}%)</span>`).join('');
+}
+
+function bars(el, rows, opt = {}) {
+  if (!rows.length) { el.innerHTML = '<div class="empty">No tasks in this selection</div>'; return; }
+  const limit = opt.all ? rows.length : (opt.limit || 10);
+  el.innerHTML = rows.slice(0, limit).map(r => {
+    const p = pct(r.done, r.total);
+    const tipTxt = `${r.label}${r.sub ? ' · ' + r.sub : ''}\nCompleted ${r.done} of ${r.total} (${p}%)\nPending ${r.total - r.done} · Overdue ${r.overdue}`;
+    return `<div class="brow${opt.onClick ? ' click' : ''}" data-id="${esc(r.id)}" data-tip="${esc(tipTxt)}">
+      <div class="lbl">${esc(r.label)}${r.sub ? ` <small>${esc(r.sub)}</small>` : ''}</div>
+      <div class="track"><div class="fill" style="width:${p}%"></div></div>
+      <div class="num"><b>${p}%</b> · ${fmtN(r.done)}/${fmtN(r.total)}${r.overdue ? ` · <span class="od">${fmtN(r.overdue)} late</span>` : ''}</div></div>`;
+  }).join('');
+  if (opt.onClick) el.querySelectorAll('.brow').forEach(b => (b.onclick = () => opt.onClick(b.dataset.id)));
+  if (opt.toggle) {
+    opt.toggle.innerHTML = rows.length > (opt.limit || 10) ? `<button class="link">${opt.all ? 'Show top ' + (opt.limit || 10) : 'Show all ' + rows.length}</button>` : '';
+    const b = opt.toggle.querySelector('button'); if (b) b.onclick = opt.onToggle;
+  }
+}
+function group(tasks, keyFn, labelFn) {
+  const m = new Map();
+  for (const t of tasks) {
+    const k = keyFn(t); let g = m.get(k);
+    if (!g) m.set(k, (g = { id: k, ...labelFn(t), total: 0, done: 0, overdue: 0 }));
+    g.total++; if (t.done) g.done++; if (isOver(t)) g.overdue++;
+  }
+  return [...m.values()];
+}
+
+// breakdown by the next level below the deepest filter (Project → Location → Area → Sub Area)
+function renderBreakdown(tasks) {
+  let lv = 0;
+  for (let i = 0; i < LEVELS.length; i++) if (F[LEVELS[i].key]) lv = i + 1;
+  if (lv >= LEVELS.length) lv = LEVELS.length - 1; // sub area chosen: show it alone
+  const L = LEVELS[lv];
+  const nameOf = t => ({ project: t.projectName, tower: t.towerName, area: t.areaName, subArea: t.subName }[L.key]);
+  const parentOf = t => (lv === 0 ? '' : lv === 1 ? (F.project ? '' : t.projectName) : '');
+  const rows = group(tasks, t => t[L.key], t => ({ label: nameOf(t), sub: parentOf(t) }))
+    .sort((a, b) => D.pos[a.id] - D.pos[b.id]);
+  $('#hBreak').textContent = 'Progress by ' + L.name.toLowerCase();
+  const drill = lv < LEVELS.length - 1 || !F[L.key];
+  bars($('#chBreak'), rows, {
+    onClick: drill ? id => select(lv, id) : null,
+    all: UI.breakAll, limit: 10, toggle: $('#actBreak'), onToggle: () => { UI.breakAll = !UI.breakAll; render(); },
+  });
+}
+function renderDepts(tasks) {
+  const rows = group(tasks, t => t.dept || '—', t => ({ label: t.dept || 'No department' })).sort((a, b) => b.total - a.total);
+  bars($('#chDept'), rows, { all: true });
+}
+
+function weekStart(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
+function columns(el, items, opt) {
+  // items: [{label, value, tip}]
+  const max = Math.max(1, ...items.map(i => i.value));
+  const step = (() => { const raw = Math.max(1, max / 4), p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (m * p >= raw) return m * p; return raw; })();
+  const top = step * Math.ceil(max / step);
+  const W = 620, H = 220, L = 36, R = 8, Tp = 10, B = 28, pw = W - L - R, ph = H - Tp - B, N = items.length, bw = pw / N, gap = Math.min(10, bw * 0.25);
+  const y = v => Tp + ph - (v / top) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(opt.aria)}">`;
+  for (let v = 0; v <= top + 1e-9; v += step) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  items.forEach((it, i) => {
+    const x0 = L + i * bw, x = x0 + gap / 2, w = bw - gap, top_ = y(it.value), h = Tp + ph - top_, r = Math.min(4, w / 2, h);
+    if (it.value > 0) s += `<path class="${opt.cls || 'col'}" d="M${x},${top_ + h} V${top_ + r} Q${x},${top_} ${x + r},${top_} H${x + w - r} Q${x + w},${top_} ${x + w},${top_ + r} V${top_ + h} Z"/>`;
+    if (opt.values && it.value > 0) s += `<text x="${x0 + bw / 2}" y="${top_ - 4}" text-anchor="middle" style="fill:var(--text-2);font-weight:600">${fmtN(it.value)}</text>`;
+    s += `<rect class="col-hit" x="${x0}" y="${Tp}" width="${bw}" height="${ph}" data-tip="${esc(it.tip)}"/>`;
+    if (!opt.every || i % opt.every === opt.every - 1 || N <= 8) s += `<text x="${x0 + bw / 2}" y="${H - 9}" text-anchor="middle">${esc(it.label)}</text>`;
+  });
+  s += `<line x1="${L}" x2="${W - R}" y1="${Tp + ph}" y2="${Tp + ph}" stroke="var(--border)"/></svg>`;
+  el.innerHTML = s + (opt.note ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">${opt.note}</div>` : '');
+}
+function renderWeekly(tasks) {
+  const N = 12, cur = weekStart(Date.now());
+  const weeks = Array.from({ length: N }, (_, i) => ({ start: weekStart(cur - (N - 1 - i) * 7 * DAY), n: 0 }));
+  const idx = new Map(weeks.map((w, i) => [w.start, i]));
+  for (const t of tasks) if (t.done && t.doneAt) { const i = idx.get(weekStart(new Date(t.doneAt).getTime())); if (i !== undefined) weeks[i].n++; }
+  const total = weeks.reduce((a, w) => a + w.n, 0);
+  columns($('#chWeekly'), weeks.map(w => ({ label: fmtDay(w.start), value: w.n, tip: `Week of ${fmtDay(w.start)}\n${w.n} task${w.n === 1 ? '' : 's'} completed` })),
+    { aria: 'Tasks completed per week', every: 2, note: `${fmtN(total)} tasks completed in 12 weeks · avg ${(total / N).toFixed(1)} per week` });
+}
+function renderAgeing(tasks) {
+  const B = [['1–7 days', 1, 7], ['8–30 days', 8, 30], ['31–60 days', 31, 60], ['61–90 days', 61, 90], ['90+ days', 91, Infinity]];
+  const counts = B.map(() => 0);
+  for (const t of tasks) if (isOver(t)) { const d = daysLate(t); const i = B.findIndex(b => d >= b[1] && d <= b[2]); if (i >= 0) counts[i]++; }
+  const total = counts.reduce((a, b) => a + b, 0);
+  columns($('#chAge'), B.map((b, i) => ({ label: b[0], value: counts[i], tip: `${b[0]} late\n${counts[i]} task${counts[i] === 1 ? '' : 's'}` })),
+    { aria: 'Overdue tasks by days late', cls: 'age', values: true, note: total ? `${fmtN(total)} overdue tasks` : 'No overdue tasks in this selection 🎉' });
+}
+function renderTop(tasks) {
+  const rows = tasks.filter(isOver).sort((a, b) => daysLate(b) - daysLate(a)).slice(0, 10);
+  $('#hTop').textContent = rows.length ? 'top 10 by days late' : '';
+  $('#tTop').innerHTML = rows.length ? `<div class="tbl-wrap"><table><thead><tr><th>Task</th><th>Location › Area › Sub Area</th><th>Department</th><th>End Date</th><th class="num">Days late</th><th>Remarks</th></tr></thead><tbody>${
+    rows.map(t => `<tr><td>${esc(t.name)}</td><td>${esc(t.towerName)} › ${esc(t.areaName)} › ${esc(t.subName)}${F.project ? '' : `<div class="path">${esc(t.projectName)}</div>`}</td><td>${esc(t.dept || '—')}</td><td>${fd(t.end)}</td><td class="num"><span class="pill">⚠ ${daysLate(t)}d</span></td><td>${t.remark ? esc(t.remark) : '<span class="path">—</span>'}</td></tr>`).join('')
+  }</tbody></table></div>` : '<div class="empty">No overdue tasks in this selection 🎉</div>';
+}
+
+load(false);
+setInterval(() => load(false), 5 * 60 * 1000); // auto-refresh every 5 minutes
+})();
+</script>
+</body>
+</html>

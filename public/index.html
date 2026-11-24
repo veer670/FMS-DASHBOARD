@@ -23,6 +23,10 @@
   header h1 { margin: 0; font-size: 22px; font-weight: 700; }
   header .sub { color: #d9c29a; font-size: 12px; }
   header .spacer { flex: 1; }
+  nav.tabs { display: flex; gap: 4px; margin-left: 28px; align-self: stretch; align-items: stretch; }
+  nav.tabs a { display: flex; align-items: center; padding: 0 16px; color: #c9d3e1; text-decoration: none; font-weight: 600; font-size: 14px; border-bottom: 3px solid transparent; margin-bottom: -19px; padding-bottom: 16px; padding-top: 16px; margin-top: -16px; }
+  nav.tabs a:hover { color: #fff; }
+  nav.tabs a.on { color: #fff; border-bottom-color: var(--gold); }
   header .meta { font-size: 12px; color: #c9d3e1; text-align: right; }
   .btn { border: 1px solid var(--border); background: var(--surface); padding: 7px 14px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
   .btn:hover { background: var(--surface-2); }
@@ -106,6 +110,7 @@
     <h1>Work Execution</h1>
     <div class="sub">Homeland Group · FMS</div>
   </div>
+  <nav class="tabs" aria-label="Pages"><a href="/" class="on" aria-current="page">Work Execution</a><a href="dashboard.html" data-carry>Dashboard</a></nav>
   <div class="spacer"></div>
   <div class="meta" id="meta">Loading…</div>
   <button class="btn" id="btnRefresh" title="Fetch fresh data from the FMS">↻ Refresh</button>
@@ -169,8 +174,14 @@ const LEVELS = [
   { key: 'subArea', sel: '#fSubArea', list: 'subAreas', all: 'All sub areas', name: 'Sub Area' },
 ];
 const F = { project: '', tower: '', area: '', subArea: '' };
+// filters can arrive in the URL (when switching from the Dashboard page) and travel with the tab links
+(() => { const q = new URLSearchParams(location.search); for (const k in F) if (q.get(k)) F[k] = q.get(k); })();
+document.querySelectorAll('a[data-carry]').forEach(a => a.addEventListener('click', () => {
+  const q = new URLSearchParams(); for (const k in F) if (F[k]) q.set(k, F[k]);
+  a.href = a.getAttribute('href').split('?')[0] + (q.toString() ? '?' + q : '');
+}));
 let D = null;
-let statusF = '';            // '', 'done', 'pend', 'over', 'week'
+let statusF = ['done', 'pend', 'over', 'week'].includes(new URLSearchParams(location.search).get('status')) ? new URLSearchParams(location.search).get('status') : ''; // '', 'done', 'pend', 'over', 'week'
 let tq = '';
 const sort = { key: 'path', dir: 1 };
 
