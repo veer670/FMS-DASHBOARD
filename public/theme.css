@@ -194,7 +194,7 @@ html[data-theme="blueprint"] .top { background: rgba(255,255,255,.92); backdrop-
 html[data-theme="blueprint"] .top h1 { font-family: var(--cond); font-size: 30px; font-weight: 600; letter-spacing: .6px; color: var(--ink-line); line-height: 1.05; }
 html[data-theme="blueprint"] .crumb { display: none; }
 html[data-theme="blueprint"] .fresh { display: none; }
-html[data-theme="blueprint"] .tblock { display: grid; grid-template-columns: minmax(150px, 1.4fr) minmax(130px, 1.2fr) 130px 90px; margin: 0 0 0 28px; border: 1.5px solid var(--ink-line); background: #fff; }
+html[data-theme="blueprint"] .tblock { display: grid; grid-template-columns: minmax(150px, 1.4fr) minmax(130px, 1.2fr) 172px 104px; margin: 0 0 0 28px; border: 1.5px solid var(--ink-line); background: #fff; }
 html[data-theme="blueprint"] .tblock > div { padding: 5px 12px 6px; border-right: 1px solid var(--ink-line); min-width: 0; }
 html[data-theme="blueprint"] .tblock > div:last-child { border-right: 0; background: var(--ink-line); color: #fff; }
 html[data-theme="blueprint"] .tblock dt { font-size: 10.5px; color: var(--slate); letter-spacing: .4px; }
@@ -221,7 +221,7 @@ html[data-theme="blueprint"] .phead h2::before { width: 10px; height: 10px; bord
 html[data-theme="blueprint"] .link { color: var(--brand-2); }
 html[data-theme="blueprint"] #tip { border-radius: 2px; background: var(--ink-line); }
 @media (max-width: 1200px) {
-  html[data-theme="blueprint"] .tblock { grid-template-columns: 1fr 1fr 110px 80px; }
+  html[data-theme="blueprint"] .tblock { grid-template-columns: 1fr 1fr 172px 104px; }
 }
 @media (max-width: 960px) {
   html[data-theme="blueprint"] .tblock { order: 3; width: 100%; margin: 6px 0 0; grid-template-columns: 1fr 1fr; }

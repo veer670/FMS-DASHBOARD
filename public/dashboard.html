@@ -14,14 +14,6 @@
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
   .panel.wide { grid-column: 1 / -1; }
 
-  /* status split */
-  .split { display: flex; height: 18px; border-radius: 4px; overflow: hidden; gap: 2px; background: var(--surface); }
-  .split > div { min-width: 0; }
-  .legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-  .legend > div { border-left: 4px solid var(--c); padding: 8px 0 8px 14px; background: linear-gradient(90deg, var(--cbg), transparent 85%); border-radius: 0 6px 6px 0; }
-  .legend .n { font-size: 24px; font-weight: 600; letter-spacing: -.3px; font-variant-numeric: tabular-nums; line-height: 1.2; }
-  .legend .l { font-size: 12.5px; color: var(--slate); }
-
   /* progress bars */
   .bars { display: flex; flex-direction: column; gap: 11px; }
   .brow { display: grid; grid-template-columns: minmax(110px, 30%) 1fr 150px; align-items: center; gap: 14px; }
@@ -44,9 +36,6 @@
   .cnote { font-size: 12.5px; color: var(--slate); margin-top: 6px; }
 
   /* Blueprint: dimension-line bars and drafting numerals */
-  html[data-theme="blueprint"] .legend .n { font-family: var(--cond); font-size: 34px; letter-spacing: .4px; }
-  html[data-theme="blueprint"] .legend > div { border-radius: 0; }
-  html[data-theme="blueprint"] .split { border-radius: 0; height: 16px; outline: 1.5px solid var(--ink-line); outline-offset: 2px; }
   html[data-theme="blueprint"] .track { height: 10px; border-radius: 0; background: transparent; position: relative; border-left: 1.5px solid var(--ink-line); border-right: 1.5px solid var(--ink-line); }
   html[data-theme="blueprint"] .track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed #93ABC6; }
   html[data-theme="blueprint"] .fill { position: relative; border-radius: 0; background: var(--chart); height: 6px; margin-top: 2px; }
@@ -54,7 +43,7 @@
   html[data-theme="blueprint"] .col { fill: var(--chart); }
 
   @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
-  @media (max-width: 640px) { .legend { grid-template-columns: 1fr; } .brow { grid-template-columns: 36% 1fr 110px; } }
+  @media (max-width: 640px) { .brow { grid-template-columns: 36% 1fr 110px; } }
 </style>
 </head>
 <body>
@@ -100,12 +89,6 @@
   </section>
 
   <section class="grid">
-    <div class="panel wide">
-      <div class="phead"><h2>Status split</h2><span class="hint">Share of active tasks in this selection</span></div>
-      <div class="split" id="split"></div>
-      <div class="legend" id="splitLegend"></div>
-    </div>
-
     <div class="panel">
       <div class="phead"><h2 id="hBreak">Progress by location</h2><span class="hint">Click a bar to drill down</span><div class="act" id="actBreak"></div></div>
       <div class="bars" id="chBreak"></div>
@@ -256,8 +239,6 @@ function render() {
   T0 = today.getTime(); M0 = monday.getTime();
 
   const tasks = D.tasks.filter(t => LEVELS.every(l => !F[l.key] || t[l.key] === F[l.key]));
-  const total = tasks.length, done = tasks.filter(t => t.done).length, pending = total - done;
-  const overdue = tasks.filter(isOver).length;
 
   const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
   $('#tbProject').textContent = F.project ? D.byId.projects.get(F.project).name : 'All projects';
@@ -265,21 +246,10 @@ function render() {
   $('#scope').innerHTML = path.length ? path.map((n, i) => i === path.length - 1 ? `<b>${esc(n)}</b>` : esc(n)).join('<span class="sep">/</span>') : 'All projects';
   LEVELS.forEach(l => $(l.sel).classList.toggle('set', !!F[l.key]));
 
-  renderSplit(done, pending - overdue, overdue, total);
   renderBreakdown(tasks);
   renderDepts(tasks);
   renderWeekly(tasks);
   renderAgeing(tasks);
-}
-
-function renderSplit(done, pendOnTime, overdue, total) {
-  const seg = [
-    ['Completed', done, 'var(--done)', 'var(--done-bg)'],
-    ['Pending, not yet due', pendOnTime, 'var(--pend)', 'var(--pend-bg)'],
-    ['Overdue', overdue, 'var(--over)', 'var(--over-bg)'],
-  ];
-  $('#split').innerHTML = total ? seg.filter(s => s[1]).map(([n, v, c]) => `<div style="flex:${v};background:${c}" data-tip="${esc(`${n}\n${fmtN(v)} tasks (${pct(v, total)}%)`)}"></div>`).join('') : '<div style="flex:1;background:var(--track)"></div>';
-  $('#splitLegend').innerHTML = seg.map(([n, v, c, bg]) => `<div style="--c:${c};--cbg:${bg}"><div class="n">${fmtN(v)} <span style="font-size:13px;font-weight:500;color:var(--slate)">${pct(v, total)}%</span></div><div class="l">${n}</div></div>`).join('');
 }
 
 function bars(el, rows, opt = {}) {
@@ -336,7 +306,7 @@ function columns(el, items, opt) {
   // items: [{label, value, tip}]
   const max = Math.max(1, ...items.map(i => i.value));
   const step = (() => { const raw = Math.max(1, max / 4), p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (m * p >= raw) return m * p; return raw; })();
-  const top = step * Math.ceil(max / step);
+  const top = step * Math.ceil((opt.values ? max * 1.12 : max) / step); // headroom for value labels
   const W = 620, H = 220, L = 36, R = 8, Tp = 10, B = 28, pw = W - L - R, ph = H - Tp - B, N = items.length, bw = pw / N, gap = Math.min(10, bw * 0.25);
   const y = v => Tp + ph - (v / top) * ph;
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(opt.aria)}">`;
