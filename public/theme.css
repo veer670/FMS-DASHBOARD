@@ -1,10 +1,36 @@
-/* Homeland FMS: shared corporate theme (Work Execution + Dashboard) */
+/* Homeland FMS: shared corporate theme (Work Execution + Dashboard)
+   Three colour themes, chosen in the sidebar: navy (default), teal, charcoal. */
+:root, html[data-theme="navy"] {
+  --side: #10223A;          /* sidebar */
+  --side-2: #1A3354;        /* sidebar hover / active */
+  --side-ink: #C3CEDD;
+  --brand: #1F3A5F;         /* Homeland navy: headers, selected states */
+  --brand-2: #2B5287;
+  --accent: #C9973F;        /* Homeland brass */
+  --canvas: #EDF1F6;
+  --chart: #2E5B8F;
+  --chart-2: #8FB0D6;
+  --hover: #E9EFF7;
+  --tint: #F4F7FB;          /* zebra rows */
+}
+html[data-theme="teal"] {
+  --side: #0A2A31; --side-2: #123F48; --side-ink: #BFD6D8;
+  --brand: #0F5560; --brand-2: #157A85;
+  --accent: #EBA23A;
+  --canvas: #ECF3F3;
+  --chart: #138A8F; --chart-2: #8CCBCD;
+  --hover: #E3F0F0; --tint: #F3F8F8;
+}
+html[data-theme="charcoal"] {
+  --side: #1D2025; --side-2: #2C3138; --side-ink: #C9CDD3;
+  --brand: #2E343B; --brand-2: #4A535E;
+  --accent: #C4874A;
+  --canvas: #F0F1F3;
+  --chart: #3F6C9C; --chart-2: #A9BED6;
+  --hover: #ECEEF1; --tint: #F7F8F9;
+}
 :root {
-  --side: #14263F;          /* sidebar navy */
-  --side-2: #1B3150;
-  --brand: #1F3A5F;         /* Homeland navy */
-  --brass: #B8863B;         /* Homeland brass */
-  --canvas: #F3F5F8;
+  --brass: var(--accent);
   --surface: #FFFFFF;
   --surface-2: #F7F9FB;
   --ink: #18212D;
@@ -12,7 +38,6 @@
   --muted: #8A93A0;
   --rule: #DCE2E9;
   --rule-soft: #EAEEF3;
-  --hover: #F1F5FA;
 
   --done: #1E7A46;  --done-bg: #E8F3EC;
   --pend: #B7791F;  --pend-bg: #FBF3E4;
@@ -34,23 +59,29 @@ button, select, input { font: inherit; color: inherit; }
 
 /* ---------- shell ---------- */
 .shell { display: grid; grid-template-columns: var(--side-w) minmax(0, 1fr); min-height: 100vh; }
-.side { background: var(--side); color: #C6D0DD; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
-.brand { display: flex; align-items: center; gap: 12px; padding: 22px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.side { background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 22px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.07); background: linear-gradient(180deg, rgba(255,255,255,.05), transparent); }
 .brand svg { width: 34px; height: 34px; flex: none; }
 .brand b { display: block; color: #fff; font-size: 16px; font-weight: 600; letter-spacing: .2px; line-height: 1.2; }
 .brand span { display: block; color: var(--brass); font-size: 12px; line-height: 1.3; }
 .menu { display: flex; flex-direction: column; padding: 14px 10px; gap: 2px; }
-.menu a { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: var(--radius); color: #C6D0DD; text-decoration: none; font-weight: 500; position: relative; }
+.menu a { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: var(--radius); color: var(--side-ink); text-decoration: none; font-weight: 500; position: relative; }
 .menu a svg { width: 18px; height: 18px; flex: none; opacity: .8; }
 .menu a:hover { background: var(--side-2); color: #fff; }
 .menu a.on { background: var(--side-2); color: #fff; }
 .menu a.on::before { content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--brass); }
 .menu a.on svg { opacity: 1; }
 .side-foot { margin-top: auto; padding: 16px 20px 20px; font-size: 12px; color: #8E9BAE; border-top: 1px solid rgba(255,255,255,.07); }
-.side-foot b { color: #C6D0DD; font-weight: 500; }
+.side-foot b { color: var(--side-ink); font-weight: 500; }
+.themes { margin-bottom: 14px; }
+.themes > span { display: block; margin-bottom: 7px; }
+.themes div { display: flex; gap: 8px; }
+.themes button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,.18); cursor: pointer; padding: 0; background: linear-gradient(135deg, var(--a) 0 55%, var(--b) 55% 100%); }
+.themes button:hover { border-color: rgba(255,255,255,.5); }
+.themes button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px var(--side), 0 0 0 4px rgba(255,255,255,.35); }
 
 .main { min-width: 0; display: flex; flex-direction: column; }
-.top { background: var(--surface); border-bottom: 1px solid var(--rule); padding: 18px 32px 16px; display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 10; }
+.top { background: var(--surface); border-bottom: 1px solid var(--rule); box-shadow: inset 0 3px 0 var(--accent); padding: 18px 32px 16px; display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 10; }
 .top h1 { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -.1px; }
 .crumb { margin: 2px 0 0; font-size: 13px; color: var(--slate); }
 .crumb b { color: var(--ink); font-weight: 500; }
@@ -81,9 +112,10 @@ footer.notes p { margin: 0 0 2px; }
 .filters select:hover { border-color: #C3CDD9; }
 .filters select.set { border-color: var(--brand); box-shadow: inset 3px 0 0 var(--brass); }
 
-.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px; min-width: 0; box-shadow: 0 1px 2px rgba(16,34,58,.04); }
 .phead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
-.phead h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.phead h2 { margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 9px; }
+.phead h2::before { content: ""; width: 4px; height: 16px; border-radius: 2px; background: var(--accent); }
 .phead .hint { color: var(--muted); font-size: 12.5px; }
 .phead .act { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .link { background: none; border: none; color: var(--brand); cursor: pointer; padding: 0; font-size: 12.5px; font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
