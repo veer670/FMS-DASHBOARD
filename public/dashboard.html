@@ -26,6 +26,9 @@
   .brow .num { font-size: 12.5px; color: var(--slate); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .brow .num b { color: var(--ink); font-weight: 600; }
   .od { color: var(--over); }
+  .brow.sel .lbl { font-weight: 600; color: var(--brand); }
+  .brow.sel .lbl::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; background: var(--accent); border: 1.5px solid var(--brand); vertical-align: 1px; }
+  .brow.sel .fill { background: var(--accent); }
 
   /* charts */
   svg text { fill: var(--slate); font-size: 12.5px; font-family: var(--font); }
@@ -80,17 +83,9 @@
 <main id="app">
   <div id="banner" role="alert"></div>
 
-  <section class="filters" aria-label="Filters">
-    <label>Project<select id="fProject"></select></label>
-    <label>Location<select id="fTower"></select></label>
-    <label>Area<select id="fArea"></select></label>
-    <label>Sub area<select id="fSubArea"></select></label>
-    <button class="btn ghost" id="btnReset">Clear filters</button>
-  </section>
-
   <section class="grid">
     <div class="panel">
-      <div class="phead"><h2 id="hBreak">Progress by location</h2><span class="hint">Click a bar to drill down</span><div class="act" id="actBreak"></div></div>
+      <div class="phead"><h2 id="hBreak">Progress by project</h2><span class="hint" id="hintBreak">Click a bar to drill down</span><div class="act"><span id="backBreak"></span><span id="actBreak"></span></div></div>
       <div class="bars" id="chBreak"></div>
     </div>
     <div class="panel">
@@ -99,8 +94,8 @@
     </div>
 
     <div class="panel">
-      <div class="phead"><h2>Tasks completed per week</h2><span class="hint">Last 12 weeks</span></div>
-      <div id="chWeekly"></div>
+      <div class="phead"><h2 id="hArea">Progress by area</h2><span class="hint" id="hintArea">Click an area to see its sub areas</span><div class="act" id="actArea"></div></div>
+      <div class="bars" id="chArea"></div>
     </div>
     <div class="panel">
       <div class="phead"><h2>Overdue ageing</h2><span class="hint">Pending tasks past their end date, by days late</span></div>
@@ -109,7 +104,7 @@
   </section>
 
   <footer class="notes">
-    <p>Pending means not yet completed. Overdue means pending and past its end date. Location is the ASAP "Tower" level. Tasks on hold (inactive in ASAP) are not included.</p>
+    <p>Pending means not yet completed. Overdue means pending and past its end date. Location is the ASAP "Tower" level. Tasks on hold (inactive in ASAP) are not included. Use the Work Execution page to filter by project, location, area or sub area; the Dashboard follows the selection you bring from there.</p>
   </footer>
 </main>
 </div>
@@ -141,7 +136,7 @@ document.querySelectorAll('a[data-carry]').forEach(a => a.addEventListener('clic
   a.href = a.getAttribute('href').split('?')[0] + (q.toString() ? '?' + q : '');
 }));
 let D = null;
-const UI = { breakAll: false };
+const UI = { breakAll: false, areaAll: false };
 
 // ---------- tooltip ----------
 const tip = $('#tip');
@@ -208,6 +203,7 @@ function optionsFor(i) {
 }
 function fillFilters() {
   LEVELS.forEach((l, i) => {
+    if (!$(l.sel)) return; // this page has no filter bar
     const parentList = i > 0 ? LEVELS[i - 1].list : null;
     const label = x => (i > 0 && !F[LEVELS[i - 1].key] ? `${x.name} — ${D.byId[parentList].get(x.parent)?.name || ''}` : x.name);
     $(l.sel).innerHTML = `<option value="">${l.all}</option>` + optionsFor(i).map(x => `<option value="${esc(x.id)}"${x.id === F[l.key] ? ' selected' : ''}>${esc(label(x))}</option>`).join('');
@@ -217,11 +213,10 @@ function select(i, id) {
   F[LEVELS[i].key] = id;
   if (id) for (let k = i, cur = id; k > 0; k--) { cur = D.byId[LEVELS[k].list].get(cur).parent; F[LEVELS[k - 1].key] = cur; }
   for (let k = i + 1; k < LEVELS.length; k++) F[LEVELS[k].key] = '';
-  UI.breakAll = false;
+  UI.breakAll = false; UI.areaAll = false;
   render();
 }
-LEVELS.forEach((l, i) => $(l.sel).addEventListener('change', e => select(i, e.target.value)));
-$('#btnReset').onclick = () => { LEVELS.forEach(l => (F[l.key] = '')); UI.breakAll = false; render(); };
+const resetAll = () => { LEVELS.forEach(l => (F[l.key] = '')); UI.breakAll = false; UI.areaAll = false; render(); };
 $('#btnRefresh').onclick = () => load(true);
 
 // ---------- status helpers ----------
@@ -244,11 +239,11 @@ function render() {
   $('#tbProject').textContent = F.project ? D.byId.projects.get(F.project).name : 'All projects';
   $('#tbLocation').textContent = F.tower ? D.byId.towers.get(F.tower).name : 'All locations';
   $('#scope').innerHTML = path.length ? path.map((n, i) => i === path.length - 1 ? `<b>${esc(n)}</b>` : esc(n)).join('<span class="sep">/</span>') : 'All projects';
-  LEVELS.forEach(l => $(l.sel).classList.toggle('set', !!F[l.key]));
+  LEVELS.forEach(l => $(l.sel) && $(l.sel).classList.toggle('set', !!F[l.key]));
 
   renderBreakdown(tasks);
   renderDepts(tasks);
-  renderWeekly(tasks);
+  renderAreas(tasks);
   renderAgeing(tasks);
 }
 
@@ -258,7 +253,7 @@ function bars(el, rows, opt = {}) {
   el.innerHTML = rows.slice(0, limit).map(r => {
     const p = pct(r.done, r.total);
     const tipTxt = `${r.label}${r.sub ? ', ' + r.sub : ''}\nCompleted ${r.done} of ${r.total} (${p}%)\nPending ${r.total - r.done}, overdue ${r.overdue}`;
-    return `<div class="brow${opt.onClick ? ' click' : ''}" data-id="${esc(r.id)}" data-tip="${esc(tipTxt)}">
+    return `<div class="brow${opt.onClick ? ' click' : ''}${r.selected ? ' sel' : ''}" data-id="${esc(r.id)}" data-tip="${esc(tipTxt)}">
       <div class="lbl">${esc(r.label)}${r.sub ? ` <small>${esc(r.sub)}</small>` : ''}</div>
       <div class="track"><div class="fill" style="width:${p}%"></div></div>
       <div class="num"><b>${p}%</b>&nbsp; ${fmtN(r.done)} of ${fmtN(r.total)}${r.overdue ? `, <span class="od">${fmtN(r.overdue)} late</span>` : ''}</div></div>`;
@@ -281,27 +276,30 @@ function group(tasks, keyFn, labelFn) {
 
 // breakdown by the next level below the deepest filter (Project → Location → Area → Sub Area)
 function renderBreakdown(tasks) {
-  let lv = 0;
-  for (let i = 0; i < LEVELS.length; i++) if (F[LEVELS[i].key]) lv = i + 1;
-  if (lv >= LEVELS.length) lv = LEVELS.length - 1; // sub area chosen: show it alone
+  const lv = F.project ? 1 : 0;              // projects, or the locations of the chosen project
   const L = LEVELS[lv];
-  const nameOf = t => ({ project: t.projectName, tower: t.towerName, area: t.areaName, subArea: t.subName }[L.key]);
-  const parentOf = t => (lv === 0 ? '' : lv === 1 ? (F.project ? '' : t.projectName) : '');
-  const rows = group(tasks, t => t[L.key], t => ({ label: nameOf(t), sub: parentOf(t) }))
+  const base = D.tasks.filter(t => !F.project || t.project === F.project); // keep sibling locations visible
+  const rows = group(base, t => t[L.key], t => ({ label: lv ? t.towerName : t.projectName }))
+    .map(r => ({ ...r, selected: F[L.key] === r.id }))
     .sort((a, b) => D.pos[a.id] - D.pos[b.id]);
   $('#hBreak').textContent = 'Progress by ' + L.name.toLowerCase();
-  const drill = lv < LEVELS.length - 1 || !F[L.key];
+  $('#hintBreak').textContent = lv ? 'Click a location to focus on it' : 'Click a project to see its locations';
+  let deepest = -1; LEVELS.forEach((l, i) => { if (F[l.key]) deepest = i; });
+  $('#backBreak').innerHTML = deepest < 0 ? '' :
+    (deepest > 0 ? `<button class="link" data-up>Back to ${esc(LEVELS[deepest].plural)}</button>&nbsp;&nbsp;` : '') + '<button class="link" data-all>All projects</button>';
+  const up = $('#backBreak [data-up]'); if (up) up.onclick = () => select(deepest - 1, F[LEVELS[deepest - 1].key]);
+  const all = $('#backBreak [data-all]'); if (all) all.onclick = resetAll;
   bars($('#chBreak'), rows, {
-    onClick: drill ? id => select(lv, id) : null,
+    onClick: id => select(lv, id),
     all: UI.breakAll, limit: 10, toggle: $('#actBreak'), onToggle: () => { UI.breakAll = !UI.breakAll; render(); },
   });
 }
+
 function renderDepts(tasks) {
   const rows = group(tasks, t => t.dept || '—', t => ({ label: t.dept || 'No department' })).sort((a, b) => b.total - a.total);
   bars($('#chDept'), rows, { all: true });
 }
 
-function weekStart(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
 function columns(el, items, opt) {
   // items: [{label, value, tip}]
   const max = Math.max(1, ...items.map(i => i.value));
@@ -321,14 +319,21 @@ function columns(el, items, opt) {
   s += `<line x1="${L}" x2="${W - R}" y1="${Tp + ph}" y2="${Tp + ph}" stroke="var(--border)"/></svg>`;
   el.innerHTML = s + (opt.note ? `<div class="cnote">${opt.note}</div>` : '');
 }
-function renderWeekly(tasks) {
-  const N = 12, cur = weekStart(Date.now());
-  const weeks = Array.from({ length: N }, (_, i) => ({ start: weekStart(cur - (N - 1 - i) * 7 * DAY), n: 0 }));
-  const idx = new Map(weeks.map((w, i) => [w.start, i]));
-  for (const t of tasks) if (t.done && t.doneAt) { const i = idx.get(weekStart(new Date(t.doneAt).getTime())); if (i !== undefined) weeks[i].n++; }
-  const total = weeks.reduce((a, w) => a + w.n, 0);
-  columns($('#chWeekly'), weeks.map(w => ({ label: fmtDay(w.start), value: w.n, tip: `Week of ${fmtDay(w.start)}\n${w.n} task${w.n === 1 ? '' : 's'} completed` })),
-    { aria: 'Tasks completed per week', every: 2, note: `${fmtN(total)} tasks completed in 12 weeks, an average of ${(total / N).toFixed(1)} a week` });
+function renderAreas(tasks) {
+  const sub = !!F.area;                        // an area is chosen: show its sub areas
+  const base = sub ? D.tasks.filter(t => t.area === F.area) : tasks;
+  const rows = (sub
+    ? group(base, t => t.subArea, t => ({ label: t.subName }))
+    : group(base, t => t.area, t => ({ label: t.areaName, sub: F.tower ? '' : F.project ? t.towerName : t.projectName + ' / ' + t.towerName })))
+    .map(r => ({ ...r, selected: sub && F.subArea === r.id }))
+    .sort((a, b) => sub ? D.pos[a.id] - D.pos[b.id]
+      : (D.pos[D.byId.areas.get(a.id)?.parent] ?? 0) - (D.pos[D.byId.areas.get(b.id)?.parent] ?? 0) || D.pos[a.id] - D.pos[b.id]);
+  $('#hArea').textContent = sub ? 'Progress by sub area' : 'Progress by area';
+  $('#hintArea').textContent = sub ? 'In ' + D.byId.areas.get(F.area).name : 'Click an area to see its sub areas';
+  bars($('#chArea'), rows, {
+    onClick: id => select(sub ? 3 : 2, id),
+    all: UI.areaAll, limit: 10, toggle: $('#actArea'), onToggle: () => { UI.areaAll = !UI.areaAll; render(); },
+  });
 }
 function renderAgeing(tasks) {
   const B = [['1–7 days', 1, 7], ['8–30 days', 8, 30], ['31–60 days', 31, 60], ['61–90 days', 61, 90], ['90+ days', 91, Infinity]];

@@ -6,7 +6,7 @@ Runs locally at **http://localhost:4783**
 
 ## Pages
 - **Work Execution** (`/`): cards + task table with export.
-- **Dashboard** (`/dashboard.html`): the same filters, plus status split, progress by the next level down (Project → Location → Area → Sub Area; click a bar to drill in), progress by department, tasks completed per week (12 weeks) and overdue ageing (1–7 / 8–30 / 31–60 / 61–90 / 90+ days late).
+- **Dashboard** (`/dashboard.html`): no filter bar. Progress by project (click one to see its locations, click a location to focus on it), progress by department, progress by area (click an area to see its sub areas) and overdue ageing. *Back to …* and *All projects* links step back out. It also opens on whatever selection you bring from Work Execution.
 
 The filters travel with you when you switch tabs.
 
