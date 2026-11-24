@@ -10,6 +10,16 @@
 <title>Dashboard · Homeland FMS</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
+  .trail { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 4px; background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--accent); border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; font-size: 15px; box-shadow: 0 1px 2px rgba(20,20,20,.04); }
+  .trail .lead { color: var(--slate); font-size: 13px; margin-right: 6px; }
+  .trail .lvl { display: block; font-size: 10.5px; color: var(--muted); letter-spacing: .3px; line-height: 1.1; }
+  .trail .crumb-btn { background: none; border: 0; padding: 4px 8px; border-radius: 6px; cursor: pointer; text-align: left; color: var(--slate); font: inherit; font-size: 15px; }
+  .trail .crumb-btn:hover { background: var(--hover); color: var(--ink); }
+  .trail .crumb-btn:hover .nm { text-decoration: underline; text-underline-offset: 3px; }
+  .trail .here { padding: 4px 10px; border-radius: 6px; background: #FBF3E4; color: var(--ink); font-weight: 700; }
+  .trail .here .lvl { color: #8A6A3A; }
+  .trail .arrow { color: var(--accent); font-weight: 700; margin: 0 2px; }
+  .trail .clear { margin-left: auto; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
   .panel.wide { grid-column: 1 / -1; }
 
@@ -72,13 +82,15 @@
 <main id="app">
   <div id="banner" role="alert"></div>
 
+  <nav class="trail" id="trail" aria-label="Current selection"></nav>
+
   <section class="grid">
     <div class="panel">
-      <div class="phead"><h2 id="hBreak">Progress by project</h2><span class="hint" id="hintBreak">Click a bar to drill down</span><div class="act"><span id="backBreak"></span><span id="actBreak"></span></div></div>
+      <div class="phead"><h2 id="hBreak">Progress by project</h2><span class="hint" id="hintBreak">Click a bar to drill down</span><div class="act" id="actBreak"></div></div>
       <div class="bars" id="chBreak"></div>
     </div>
     <div class="panel">
-      <div class="phead"><h2>Progress by department</h2><span class="hint">Share of tasks completed</span></div>
+      <div class="phead"><h2>Progress by department</h2><span class="hint" id="hintDept">Share of tasks completed</span></div>
       <div class="bars" id="chDept"></div>
     </div>
 
@@ -87,7 +99,7 @@
       <div class="bars" id="chArea"></div>
     </div>
     <div class="panel">
-      <div class="phead"><h2>Overdue ageing</h2><span class="hint">Pending tasks past their end date, by days late</span></div>
+      <div class="phead"><h2>Overdue ageing</h2><span class="hint" id="hintAge">Pending tasks past their end date, by days late</span></div>
       <div id="chAge"></div>
     </div>
   </section>
@@ -226,6 +238,10 @@ function render() {
   const tasks = D.tasks.filter(t => LEVELS.every(l => !F[l.key] || t[l.key] === F[l.key]));
 
   const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
+  renderTrail(path);
+  const scopeTxt = path.length ? 'In ' + path.join(' / ') : '';
+  $('#hintDept').textContent = scopeTxt || 'Share of tasks completed';
+  $('#hintAge').textContent = scopeTxt ? scopeTxt + ', by days late' : 'Pending tasks past their end date, by days late';
   $('#scope').innerHTML = path.length ? path.map((n, i) => i === path.length - 1 ? `<b>${esc(n)}</b>` : esc(n)).join('<span class="sep">/</span>') : 'All projects';
   LEVELS.forEach(l => $(l.sel) && $(l.sel).classList.toggle('set', !!F[l.key]));
 
@@ -273,11 +289,7 @@ function renderBreakdown(tasks) {
     .sort((a, b) => D.pos[a.id] - D.pos[b.id]);
   $('#hBreak').textContent = 'Progress by ' + L.name.toLowerCase();
   $('#hintBreak').textContent = lv ? 'Click a location to focus on it' : 'Click a project to see its locations';
-  let deepest = -1; LEVELS.forEach((l, i) => { if (F[l.key]) deepest = i; });
-  $('#backBreak').innerHTML = deepest < 0 ? '' :
-    (deepest > 0 ? `<button class="link" data-up>Back to ${esc(LEVELS[deepest].plural)}</button>&nbsp;&nbsp;` : '') + '<button class="link" data-all>All projects</button>';
-  const up = $('#backBreak [data-up]'); if (up) up.onclick = () => select(deepest - 1, F[LEVELS[deepest - 1].key]);
-  const all = $('#backBreak [data-all]'); if (all) all.onclick = resetAll;
+  if (lv) $('#hBreak').textContent = 'Locations in ' + D.byId.projects.get(F.project).name;
   bars($('#chBreak'), rows, {
     onClick: id => select(lv, id),
     all: UI.breakAll, limit: 10, toggle: $('#actBreak'), onToggle: () => { UI.breakAll = !UI.breakAll; render(); },
@@ -308,6 +320,20 @@ function columns(el, items, opt) {
   s += `<line x1="${L}" x2="${W - R}" y1="${Tp + ph}" y2="${Tp + ph}" stroke="var(--border)"/></svg>`;
   el.innerHTML = s + (opt.note ? `<div class="cnote">${opt.note}</div>` : '');
 }
+// "You are viewing" bar: every step can be clicked to go back to it
+function renderTrail() {
+  const steps = [{ lv: -1, name: 'All projects', level: 'Start' }];
+  LEVELS.forEach((l, i) => { if (F[l.key]) steps.push({ lv: i, name: D.byId[l.list].get(F[l.key]).name, level: l.name }); });
+  const last = steps.length - 1;
+  $('#trail').innerHTML = '<span class="lead">You are viewing</span>' + steps.map((st, i) => {
+    const inner = `<span class="lvl">${esc(st.level)}</span><span class="nm">${esc(st.name)}</span>`;
+    return (i ? '<span class="arrow" aria-hidden="true">›</span>' : '') +
+      (i === last ? `<span class="here" aria-current="location">${inner}</span>` : `<button class="crumb-btn" data-lv="${st.lv}" title="Go back to ${esc(st.name)}">${inner}</button>`);
+  }).join('') + (last ? '<button class="btn clear" data-clear>Clear selection</button>' : '');
+  $('#trail').querySelectorAll('.crumb-btn').forEach(b => (b.onclick = () => { const lv = +b.dataset.lv; lv < 0 ? resetAll() : select(lv, F[LEVELS[lv].key]); }));
+  const c = $('#trail [data-clear]'); if (c) c.onclick = resetAll;
+}
+
 function renderAreas(tasks) {
   const sub = !!F.area;                        // an area is chosen: show its sub areas
   const base = sub ? D.tasks.filter(t => t.area === F.area) : tasks;
@@ -317,8 +343,9 @@ function renderAreas(tasks) {
     .map(r => ({ ...r, selected: sub && F.subArea === r.id }))
     .sort((a, b) => sub ? D.pos[a.id] - D.pos[b.id]
       : (D.pos[D.byId.areas.get(a.id)?.parent] ?? 0) - (D.pos[D.byId.areas.get(b.id)?.parent] ?? 0) || D.pos[a.id] - D.pos[b.id]);
-  $('#hArea').textContent = sub ? 'Progress by sub area' : 'Progress by area';
-  $('#hintArea').textContent = sub ? 'In ' + D.byId.areas.get(F.area).name : 'Click an area to see its sub areas';
+  const where = F.tower ? D.byId.towers.get(F.tower).name : F.project ? D.byId.projects.get(F.project).name : '';
+  $('#hArea').textContent = sub ? 'Sub areas in ' + D.byId.areas.get(F.area).name : where ? 'Areas in ' + where : 'Progress by area';
+  $('#hintArea').textContent = sub ? 'Click a sub area to focus on it' : 'Click an area to see its sub areas';
   bars($('#chArea'), rows, {
     onClick: id => select(sub ? 3 : 2, id),
     all: UI.areaAll, limit: 10, toggle: $('#actArea'), onToggle: () => { UI.areaAll = !UI.areaAll; render(); },
