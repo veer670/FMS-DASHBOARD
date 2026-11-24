@@ -140,3 +140,92 @@ footer.notes p { margin: 0 0 2px; }
 }
 @media (max-width: 520px) { .filters { grid-template-columns: 1fr; } .menu a span { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ---------- title block (shown in the Blueprint theme) ---------- */
+.tblock { display: none; }
+
+/* =====================================================================
+   BLUEPRINT: the page as a construction drawing sheet
+   ===================================================================== */
+html[data-theme="blueprint"] {
+  --side: #0E3A66; --side-2: #164C82; --side-ink: #D3E2F3;
+  --brand: #123A63; --brand-2: #1E5A96;
+  --accent: #F2C14E;          /* highlighter amber */
+  --ink-line: #123A63;
+  --canvas: #F4F7FB;
+  --chart: #1E5A96; --chart-2: #9CBBE0;
+  --hover: #E7EFF9; --tint: #F7FAFD;
+  --rule: #C9D6E5; --rule-soft: #E2EAF3;
+  --radius: 2px;
+  --cond: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", var(--font);
+}
+html[data-theme="blueprint"] body {
+  background-color: var(--canvas);
+  background-image:
+    linear-gradient(rgba(18,58,99,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18,58,99,.07) 1px, transparent 1px),
+    linear-gradient(rgba(18,58,99,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18,58,99,.035) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  background-attachment: fixed;
+}
+/* blueprint sidebar */
+html[data-theme="blueprint"] .side {
+  background-color: var(--side);
+  background-image:
+    linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+  border-right: 3px double rgba(255,255,255,.35);
+}
+html[data-theme="blueprint"] .brand { background: none; border-bottom: 1px dashed rgba(255,255,255,.3); }
+html[data-theme="blueprint"] .brand b { font-family: var(--cond); font-size: 22px; font-weight: 600; letter-spacing: 1.2px; }
+html[data-theme="blueprint"] .brand span { color: var(--accent); letter-spacing: .3px; }
+html[data-theme="blueprint"] .menu a { border-radius: 2px; border: 1px solid transparent; }
+html[data-theme="blueprint"] .menu a:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.25); }
+html[data-theme="blueprint"] .menu a.on { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.55); }
+html[data-theme="blueprint"] .menu a.on::before { background: var(--accent); }
+html[data-theme="blueprint"] .side-foot { border-top: 1px dashed rgba(255,255,255,.3); }
+
+/* header as a drawing title block */
+html[data-theme="blueprint"] .top { background: rgba(255,255,255,.92); backdrop-filter: blur(2px); box-shadow: none; border-bottom: 2px solid var(--ink-line); padding-top: 14px; padding-bottom: 14px; }
+html[data-theme="blueprint"] .top h1 { font-family: var(--cond); font-size: 30px; font-weight: 600; letter-spacing: .6px; color: var(--ink-line); line-height: 1.05; }
+html[data-theme="blueprint"] .crumb { display: none; }
+html[data-theme="blueprint"] .fresh { display: none; }
+html[data-theme="blueprint"] .tblock { display: grid; grid-template-columns: minmax(150px, 1.4fr) minmax(130px, 1.2fr) 130px 90px; margin: 0 0 0 28px; border: 1.5px solid var(--ink-line); background: #fff; }
+html[data-theme="blueprint"] .tblock > div { padding: 5px 12px 6px; border-right: 1px solid var(--ink-line); min-width: 0; }
+html[data-theme="blueprint"] .tblock > div:last-child { border-right: 0; background: var(--ink-line); color: #fff; }
+html[data-theme="blueprint"] .tblock dt { font-size: 10.5px; color: var(--slate); letter-spacing: .4px; }
+html[data-theme="blueprint"] .tblock > div:last-child dt { color: #BCD0E6; }
+html[data-theme="blueprint"] .tblock dd { margin: 0; font-family: var(--cond); font-size: 17px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-line); }
+html[data-theme="blueprint"] .tblock > div:last-child dd { color: #fff; }
+html[data-theme="blueprint"] .btn { border-radius: 2px; }
+html[data-theme="blueprint"] #btnRefresh { border-color: var(--ink-line); color: var(--ink-line); }
+
+/* filters: drafting fields */
+html[data-theme="blueprint"] .filters select { border-radius: 2px; border-color: #AFC2D8; background-color: #fff; }
+html[data-theme="blueprint"] .filters select.set { border-color: var(--ink-line); box-shadow: inset 0 -3px 0 var(--accent); }
+
+/* panels with crop marks at the corners */
+html[data-theme="blueprint"] .panel { border-radius: 0; border: 1px solid #AFC2D8; box-shadow: none; position: relative; background: rgba(255,255,255,.96); }
+html[data-theme="blueprint"] .panel::before, html[data-theme="blueprint"] .panel::after,
+html[data-theme="blueprint"] .ledger::before, html[data-theme="blueprint"] .ledger::after {
+  content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none; border: 0 solid var(--ink-line);
+}
+html[data-theme="blueprint"] .panel::before, html[data-theme="blueprint"] .ledger::before { top: -5px; left: -5px; border-top-width: 2px; border-left-width: 2px; }
+html[data-theme="blueprint"] .panel::after, html[data-theme="blueprint"] .ledger::after { bottom: -5px; right: -5px; border-bottom-width: 2px; border-right-width: 2px; }
+html[data-theme="blueprint"] .phead h2 { font-family: var(--cond); font-size: 20px; font-weight: 600; letter-spacing: .4px; color: var(--ink-line); }
+html[data-theme="blueprint"] .phead h2::before { width: 10px; height: 10px; border-radius: 0; background: var(--accent); border: 1.5px solid var(--ink-line); }
+html[data-theme="blueprint"] .link { color: var(--brand-2); }
+html[data-theme="blueprint"] #tip { border-radius: 2px; background: var(--ink-line); }
+@media (max-width: 1200px) {
+  html[data-theme="blueprint"] .tblock { grid-template-columns: 1fr 1fr 110px 80px; }
+}
+@media (max-width: 960px) {
+  html[data-theme="blueprint"] .tblock { order: 3; width: 100%; margin: 6px 0 0; grid-template-columns: 1fr 1fr; }
+  html[data-theme="blueprint"] .tblock > div:nth-child(2) { border-right: 0; }
+  html[data-theme="blueprint"] .tblock > div:nth-child(-n+2) { border-bottom: 1px solid var(--ink-line); }
+  html[data-theme="blueprint"] .side { border-right: 0; border-bottom: 3px double rgba(255,255,255,.35); }
+}

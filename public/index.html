@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
-<script>try { document.documentElement.dataset.theme = localStorage.getItem('fms-theme') || 'navy'; } catch (e) { document.documentElement.dataset.theme = 'navy'; }</script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('fms-theme') || 'blueprint'; } catch (e) { document.documentElement.dataset.theme = 'blueprint'; }</script>
 <title>Work Execution · Homeland FMS</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231F3A5F'/%3E%3Cpath d='M8 23V12l8-5 8 5v11' fill='none' stroke='%23B8863B' stroke-width='2.5'/%3E%3C/svg%3E">
 <style>
@@ -62,6 +62,22 @@
   .st.done { color: var(--done); --sbg: var(--done-bg); } .st.pend { color: var(--pend); --sbg: var(--pend-bg); } .st.over { color: var(--over); --sbg: var(--over-bg); } .st.hold { color: var(--hold); --sbg: var(--hold-bg); }
   .late { color: var(--over); font-size: 12px; }
 
+  /* Blueprint: schedule-style ledger, stamped statuses */
+  html[data-theme="blueprint"] .ledger { position: relative; overflow: visible; border-radius: 0; border: 1.5px solid var(--ink-line); }
+  html[data-theme="blueprint"] .kpi { background: #fff; border-right: 1px solid #AFC2D8; padding-top: 14px; }
+  html[data-theme="blueprint"] .kpi:hover { background: var(--hover); }
+  html[data-theme="blueprint"] .kpi.on { background: var(--kbg); box-shadow: inset 0 0 0 2px var(--k); }
+  html[data-theme="blueprint"] .kpi .k-label i { border-radius: 2px; }
+  html[data-theme="blueprint"] .kpi .k-value { font-family: var(--cond); font-size: 44px; font-weight: 600; letter-spacing: .5px; line-height: 1; margin-top: 8px; }
+  html[data-theme="blueprint"] .kpi::after { height: 0; border-bottom: 4px solid var(--k); }
+  html[data-theme="blueprint"] .seg { border-radius: 2px; border-color: var(--ink-line); }
+  html[data-theme="blueprint"] .seg .chip { border-right-color: #AFC2D8; }
+  html[data-theme="blueprint"] .tbl-wrap { border-radius: 0; border-color: var(--ink-line); }
+  html[data-theme="blueprint"] th { font-family: var(--cond); font-size: 14px; font-weight: 600; letter-spacing: .5px; }
+  html[data-theme="blueprint"] .st { border-radius: 2px; border: 1.5px solid currentColor; background: #fff; padding: 1px 8px; font-size: 11.5px; letter-spacing: .3px; }
+  html[data-theme="blueprint"] .st::before { border-radius: 0; width: 6px; height: 6px; }
+  html[data-theme="blueprint"] .btn.export { border-radius: 2px; }
+
   @media (max-width: 1280px) { .ledger { grid-template-columns: repeat(3, minmax(0, 1fr)); } .kpi:nth-child(3) { border-right: 0; } .kpi:nth-child(-n+3) { border-bottom: 1px solid var(--rule-soft); } }
   @media (max-width: 640px) { .ledger { grid-template-columns: 1fr 1fr; } .kpi { border-right: 0; border-bottom: 1px solid var(--rule-soft); } .search { min-width: 0; width: 100%; } }
 </style>
@@ -85,6 +101,12 @@
       <h1>Work Execution</h1>
       <p class="crumb" id="scope">All projects</p>
     </div>
+    <dl class="tblock" aria-label="Sheet details">
+      <div><dt>Project</dt><dd id="tbProject">All projects</dd></div>
+      <div><dt>Location</dt><dd id="tbLocation">All locations</dd></div>
+      <div><dt>Updated</dt><dd id="tbUpdated">…</dd></div>
+      <div><dt>Sheet</dt><dd>01 of 02</dd></div>
+    </dl>
     <div class="top-act">
       <div class="fresh" id="meta">Loading…</div>
       <button class="btn" id="btnRefresh" title="Fetch fresh data from ASAP"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 2.5v3h-3"/></svg>Refresh</button>
@@ -175,6 +197,7 @@ async function load(force) {
     render();
     const g = new Date(body.generatedAt);
     $('#meta').className = 'fresh';
+    $('#tbUpdated').textContent = g.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
     $('#meta').innerHTML = '<span class="live"></span>Updated ' + esc(g.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })) + '<br>' + esc(g.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
   } catch (e) {
     const b = $('#banner');
@@ -282,6 +305,8 @@ function render() {
   $('#cards').querySelectorAll('.kpi').forEach(c => (c.onclick = () => { statusF = statusF === c.dataset.st ? '' : c.dataset.st; render(); }));
 
   const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
+  $('#tbProject').textContent = F.project ? D.byId.projects.get(F.project).name : 'All projects';
+  $('#tbLocation').textContent = F.tower ? D.byId.towers.get(F.tower).name : 'All locations';
   $('#scope').innerHTML = path.length ? path.map((n, i) => i === path.length - 1 ? `<b>${esc(n)}</b>` : esc(n)).join('<span class="sep">/</span>') : 'All projects';
   LEVELS.forEach(l => $(l.sel).classList.toggle('set', !!F[l.key]));
 

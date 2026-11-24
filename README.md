@@ -47,7 +47,9 @@ Keep the window open while using the page. First time only: create `.env` from `
 ## Look and feel
 Corporate theme shared in `public/theme.css` and `public/theme.js`: sidebar with the page menu, a colour-tinted status ledger with icons, coloured table header, status tags, accent-marked panel titles, IBM Plex Sans. Works down to phone width.
 
-**Colour themes** (pick in the sidebar, remembered per browser): Homeland Navy (default, navy + brass), Deep Teal (teal + amber), Charcoal (charcoal + copper).
+**Colour themes** (pick in the sidebar, remembered per browser):
+- **Blueprint** (default): the page as a construction drawing sheet: grid paper, blueprint sidebar, a drawing title block in the header (Project, Location, Updated, Sheet), crop-mark panel corners, Barlow Condensed numerals, stamped status tags, dimension-line progress bars.
+- Homeland Navy (navy + brass), Deep Teal (teal + amber), Charcoal (charcoal + copper).
 
 ## How it works
 `server.js` (zero-dependency Node) serves `public/index.html` and `GET /api/data`, which pulls Project, Tower, Area, SubArea, Task, Department, Update and Chatmessage from PostgREST (cached 60 s; the page auto-refreshes every 5 minutes). The token stays in `.env` on this machine and is never sent to the browser.
