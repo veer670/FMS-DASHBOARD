@@ -75,23 +75,7 @@
     if (!box) return;
     const initials = u.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
     box.innerHTML = `<div class="who-card"><span class="avatar" aria-hidden="true">${esc(initials)}</span><div class="who-txt"><b>${esc(u.name)}</b><span>${esc(u.username)} · ${u.role === 'admin' ? 'Admin' : 'User'}</span></div></div>
-      <div class="who-act"><button type="button" class="link-side" data-pw>Change password</button><button type="button" class="link-side" data-out>Sign out</button></div>`;
+      <div class="who-act"><button type="button" class="link-side" data-out>Sign out</button></div>`;
     box.querySelector('[data-out]').onclick = async () => { await api('POST', '/api/logout', {}); location.href = '/login.html'; };
-    box.querySelector('[data-pw]').onclick = async () => {
-      const ok = await dialog({
-        title: 'Change your password', submit: 'Change password',
-        fields: [
-          { name: 'current', label: 'Current password', type: 'password', autocomplete: 'current-password' },
-          { name: 'password', label: 'New password (at least 8 characters)', type: 'password', autocomplete: 'new-password' },
-          { name: 'confirm', label: 'Repeat new password', type: 'password', autocomplete: 'new-password' },
-        ],
-        check: async v => {
-          if (v.password !== v.confirm) return 'The new passwords do not match.';
-          const r = await api('POST', '/api/me/password', { current: v.current, password: v.password });
-          return r.ok ? '' : r.data.error || 'Could not change the password.';
-        },
-      });
-      if (ok) toast('Password changed');
-    };
   })();
 })();

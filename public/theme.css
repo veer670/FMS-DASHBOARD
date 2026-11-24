@@ -57,7 +57,7 @@ button, select, input { font: inherit; color: inherit; }
 .menu a.on svg { opacity: 1; }
 .side-foot { margin-top: auto; padding: 16px 20px 20px; font-size: 12px; color: #8E9BAE; border-top: 1px solid rgba(255,255,255,.07); }
 .side-foot b { color: var(--side-ink); font-weight: 500; }
-.who { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.who { margin: 0; padding: 0; border: 0; }
 .who-card { display: flex; align-items: center; gap: 10px; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #15171A; display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; }
 .who-txt { min-width: 0; }

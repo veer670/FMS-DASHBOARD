@@ -10,7 +10,6 @@
 <title>Users · Homeland FMS</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
-  .grid2 { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; align-items: start; }
   .form { display: flex; flex-direction: column; gap: 12px; }
   .form .btn.primary { justify-content: center; padding: 9px 14px; }
   .tbl-wrap { overflow: auto; border: 1px solid var(--rule); border-radius: var(--radius); }
@@ -25,7 +24,6 @@
   .acts { display: flex; flex-wrap: wrap; gap: 6px; }
   .acts .btn { padding: 4px 10px; font-size: 12px; }
   .you { font-size: 11px; color: var(--muted); margin-left: 6px; }
-  @media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -41,7 +39,7 @@
     <a href="/" data-carry><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M6.5 7.5h7M6.5 10.5h7M6.5 13.5h4"/></svg><span>Work Execution</span></a>
     <a href="users.html" class="on" aria-current="page"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="7" r="3"/><path d="M2.5 16.5c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M13 4.5a2.8 2.8 0 0 1 0 5.2M15.5 12.5c1 .7 1.7 2 2 4"/></svg><span>Users</span></a>
   </nav>
-  <div class="side-foot"><div class="who" id="who"></div>Live data from <b>ASAP</b><br>Refreshes every 5 minutes</div>
+  <div class="side-foot"><div class="who" id="who"></div></div>
 </aside>
 <div class="main">
   <header class="top">
@@ -52,21 +50,11 @@
   </header>
 
 <main id="app">
-  <section class="grid2">
+  <section>
     <div class="panel">
-      <div class="phead"><h2>Add a user</h2></div>
-      <form class="form" id="fAdd" novalidate autocomplete="off">
-        <label>Full name<input name="name" required></label>
-        <label>User ID<input name="username" autocapitalize="none" spellcheck="false" placeholder="e.g. deepak.m" required></label>
-        <label>Password (at least 8 characters)<input name="password" type="password" autocomplete="new-password" required></label>
-        <label>Role<select name="role"><option value="user">User: can view both pages</option><option value="admin">Admin: can also manage users</option></select></label>
-        <p class="form-err" role="alert"></p>
-        <button class="btn primary" type="submit">Create user</button>
-      </form>
-    </div>
-
-    <div class="panel">
-      <div class="phead"><h2>All users</h2><span class="hint" id="count"></span></div>
+      <div class="phead"><h2>All users</h2><span class="hint" id="count"></span>
+        <div class="act"><button class="btn primary" id="btnAdd" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Add user</button></div>
+      </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Last sign-in</th><th>Created</th><th>Actions</th></tr></thead>
@@ -150,15 +138,23 @@
     }
   });
 
-  const form = $('#fAdd'), err = form.querySelector('.form-err');
-  form.onsubmit = async e => {
-    e.preventDefault(); err.textContent = '';
-    const v = Object.fromEntries(new FormData(form));
-    const btn = form.querySelector('button'); btn.disabled = true;
-    const r = await api('POST', '/api/users', v); btn.disabled = false;
-    if (!r.ok) { err.textContent = r.data.error || 'Could not create the user.'; return; }
-    list.push(r.data.user); render(); form.reset();
-    toast(`User ${r.data.user.username} created`);
+  $('#btnAdd').onclick = async () => {
+    let created = null;
+    await dialog({
+      title: 'Add a user', submit: 'Create user',
+      fields: [
+        { name: 'name', label: 'Full name' },
+        { name: 'username', label: 'User ID (e.g. deepak.m)' },
+        { name: 'password', label: 'Password (at least 8 characters)', type: 'password', autocomplete: 'new-password' },
+        { name: 'role', label: 'Role', type: 'select', value: 'user', options: [{ value: 'user', label: 'User: can view both pages' }, { value: 'admin', label: 'Admin: can also manage users' }] },
+      ],
+      check: async v => {
+        const r = await api('POST', '/api/users', v);
+        if (!r.ok) return r.data.error || 'Could not create the user.';
+        created = r.data.user; return '';
+      },
+    });
+    if (created) { list.push(created); render(); toast(`User ${created.username} created`); }
   };
 
   // wait for session.js to know who is signed in, then load

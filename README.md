@@ -8,8 +8,8 @@ Runs locally at **http://localhost:4783**
 Every page needs a user ID and password.
 
 - **First run:** open http://localhost:4783. With no accounts yet, the sign-in page asks you to create the **admin account**.
-- **Admins** see a **Users** page in the menu: create user IDs and passwords, reset a password, make someone admin or user, disable or delete an account. Disabling, deleting or resetting a password signs that person out straight away. You cannot remove your own admin access, and there is always at least one admin.
-- **Everyone** can change their own password from the sidebar (*Change password*) and *Sign out*.
+- **Admins** see a **Users** page in the menu: the **Add user** button opens the form to create a user ID and password; the table lets you reset a password, make someone admin or user, disable or delete an account. Disabling, deleting or resetting a password signs that person out straight away. You cannot remove your own admin access, and there is always at least one admin.
+- **Everyone** can *Sign out* from the sidebar. Passwords are set and reset by an admin on the Users page.
 - Accounts are stored in `data/users.json` on this computer (git-ignored). Passwords are stored only as salted scrypt hashes. Sign-ins last 12 hours (`SESSION_HOURS` in `.env`); restarting the server signs everyone out. 8 wrong passwords from one computer lock sign-in for 10 minutes.
 - The server listens on this computer only (`HOST=127.0.0.1`). To let colleagues on the office network open it, set `HOST=0.0.0.0` in `.env` and share `http://<this-computer's-IP>:4783`.
 
