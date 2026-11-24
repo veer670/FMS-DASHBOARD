@@ -20,6 +20,7 @@ The filters travel with you when you switch tabs.
 | Completed | Tasks marked completed |
 | Pending | Tasks not yet completed |
 | Overdue | Pending tasks whose end date is before today |
+| Hold | Tasks marked inactive in ASAP — the task itself, or its sub area / area / location. Not counted in Total, Pending or Overdue |
 | Completed This Week | Tasks completed since Monday 00:00 |
 
 Click a card to show just those tasks in the table (click again to clear).
@@ -27,9 +28,9 @@ Click a card to show just those tasks in the table (click again to clear).
 ## Tasks table
 Columns: **Area · Sub Area · Task · Status · End Date · Remarks** — every task in the current filter selection, in ASAP order.
 
-- **Status**: ✓ Completed / Pending / ⚠ Overdue (with days late).
+- **Status**: ✓ Completed / Pending / ⚠ Overdue (with days late) / Hold.
 - **Remarks**: the latest step-chat message the site team typed in ASAP (with who and which step). Tasks without chat show the latest ASAP activity-log entry in grey italics; automatic overdue reminders are hidden.
-- Status chips (All / Pending / Overdue / Completed / This week), search box, click a column header to sort (third click returns to ASAP order).
+- Status chips (All / Pending / Overdue / Completed / Hold / This week), search box, click a column header to sort (third click returns to ASAP order).
 
 ## Export
 **⤓ Export Excel** downloads exactly the tasks currently shown in the table (filters, status chip and search applied) as a formatted `.xlsx`: title and selection line, navy header row with filters, frozen header, coloured status, real Excel dates, A4 landscape print setup with page numbers. Columns: S.No, Project, Location, Area, Sub Area, Task, Department, Status, Start Date, End Date, Days Late, Completed On, Remarks, Remark By, Remark Date.

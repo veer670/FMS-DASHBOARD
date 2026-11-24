@@ -43,13 +43,13 @@
   .scope { font-size: 13px; color: var(--text-2); margin: -10px 0 16px 2px; }
   .scope b { color: var(--text); }
 
-  .cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+  .cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--accent); border-radius: 10px; padding: 18px 20px; text-align: left; cursor: pointer; transition: box-shadow .12s; display: flex; flex-direction: column; justify-content: flex-start; font: inherit; color: inherit; }
   .card:hover { box-shadow: 0 4px 14px rgba(16,24,40,.08); }
   .card.on { box-shadow: 0 0 0 2px var(--accent); }
   .card .label { font-size: 13px; font-weight: 600; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
   .card .icon { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 13px; color: #fff; background: var(--accent); flex: none; }
-  .card .value { font-size: 40px; font-weight: 700; line-height: 1.1; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .card .value { font-size: 36px; font-weight: 700; line-height: 1.1; margin-top: 10px; font-variant-numeric: tabular-nums; }
   .card .note { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .card .bar { height: 6px; background: #e9edf3; border-radius: 3px; margin-top: 12px; overflow: hidden; }
   .card .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
@@ -57,6 +57,7 @@
   .c-done { --accent: var(--good); } .c-done .value { color: var(--good-text); }
   .c-pending { --accent: var(--warn); }
   .c-overdue { --accent: var(--crit); } .c-overdue .value { color: var(--crit-text); }
+  .c-hold { --accent: #6b6a66; } .c-hold .value { color: #52514e; }
   .c-week { --accent: var(--blue); }
 
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 22px; }
@@ -89,13 +90,15 @@
   .pill.done { background: var(--good-bg); color: var(--good-text); }
   .pill.pend { background: var(--warn-bg); color: var(--warn-text); }
   .pill.over { background: var(--crit-bg); color: var(--crit-text); }
+  .pill.hold { background: #eeeeec; color: #52514e; letter-spacing: -.5px; }
+  .pill.hold::first-letter { letter-spacing: -2px; }
   .late { color: var(--crit-text); font-weight: 600; }
   .empty { text-align: center; color: var(--muted); padding: 22px; }
 
   footer { margin-top: 18px; font-size: 12px; color: var(--muted); }
   .loading { opacity: .55; transition: opacity .15s; }
 
-  @media (max-width: 1100px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1250px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 800px) {
     .filters { grid-template-columns: 1fr 1fr; } .filters .btn { grid-column: 1 / -1; }
     .cards { grid-template-columns: 1fr 1fr; } main { padding: 16px; } header { padding: 14px 16px; }
@@ -151,7 +154,8 @@
 
   <footer>
     Pending = not yet completed · Overdue = pending and past its end date · Completed this week = completed since Monday.
-    Remarks = latest step-chat message from the site team in ASAP; tasks without chat show the latest activity-log entry in grey italics (automatic overdue reminders hidden). Inactive items are excluded.
+    Hold = tasks marked inactive in ASAP (the task itself, or its sub area / area / location); they are not counted in Total, Pending or Overdue.
+    Remarks = latest step-chat message from the site team in ASAP; tasks without chat show the latest activity-log entry in grey italics (automatic overdue reminders hidden). Inactive locations, areas and sub areas are not offered in the filters.
   </footer>
 </main>
 
@@ -181,7 +185,7 @@ document.querySelectorAll('a[data-carry]').forEach(a => a.addEventListener('clic
   a.href = a.getAttribute('href').split('?')[0] + (q.toString() ? '?' + q : '');
 }));
 let D = null;
-let statusF = ['done', 'pend', 'over', 'week'].includes(new URLSearchParams(location.search).get('status')) ? new URLSearchParams(location.search).get('status') : ''; // '', 'done', 'pend', 'over', 'week'
+let statusF = ['done', 'pend', 'over', 'hold', 'week'].includes(new URLSearchParams(location.search).get('status')) ? new URLSearchParams(location.search).get('status') : ''; // '', 'done', 'pend', 'over', 'week'
 let tq = '';
 const sort = { key: 'path', dir: 1 };
 
@@ -211,15 +215,16 @@ async function load(force) {
 function prepare(d) {
   const live = arr => arr.filter(x => x.active);
   const lists = { projects: live(d.projects), towers: live(d.towers), areas: live(d.areas), subAreas: live(d.subAreas) };
-  const byId = {}, pos = {};
-  for (const k in lists) { byId[k] = new Map(lists[k].map(x => [x.id, x])); lists[k].forEach((x, i) => (pos[x.id] = i)); }
+  const byId = {}, pos = {}, all = {};
+  for (const k in lists) { byId[k] = new Map(lists[k].map(x => [x.id, x])); all[k] = new Map(d[k].map(x => [x.id, x])); d[k].forEach((x, i) => (pos[x.id] = i)); }
   const tasks = [];
   d.tasks.forEach((t, i) => {
-    if (!t.active) return;
-    const s = byId.subAreas.get(t.subAreaId), a = s && byId.areas.get(s.parent), tw = a && byId.towers.get(a.parent), p = tw && byId.projects.get(tw.parent);
+    const s = all.subAreas.get(t.subAreaId), a = s && all.areas.get(s.parent), tw = a && all.towers.get(a.parent), p = tw && all.projects.get(tw.parent);
     if (!p) return;
+    // Hold = marked inactive in ASAP, on the task itself or on anything above it
+    const hold = !(t.active && s.active && a.active && tw.active && p.active);
     tasks.push({
-      ...t, project: p.id, tower: tw.id, area: a.id, subArea: s.id,
+      ...t, hold, project: p.id, tower: tw.id, area: a.id, subArea: s.id,
       areaName: a.name, subName: s.name, towerName: tw.name, projectName: p.name,
       // ASAP order: project › location (ASAP 'Tower') › area › sub area › task
       ord: [pos[p.id], pos[tw.id], pos[a.id], pos[s.id], i],
@@ -260,9 +265,9 @@ $('#tq').addEventListener('input', e => { tq = e.target.value.trim().toLowerCase
 // ---------- status helpers ----------
 let T0 = 0, M0 = 0;
 const dayOf = iso => { const d = new Date(iso); d.setHours(0, 0, 0, 0); return d.getTime(); };
-const isOver = t => !t.done && t.end && dayOf(t.end) < T0;
-const isWeek = t => t.done && t.doneAt && new Date(t.doneAt).getTime() >= M0;
-const STATUS = { '': () => true, done: t => t.done, pend: t => !t.done, over: isOver, week: isWeek };
+const isOver = t => !t.hold && !t.done && t.end && dayOf(t.end) < T0;
+const isWeek = t => !t.hold && t.done && t.doneAt && new Date(t.doneAt).getTime() >= M0;
+const STATUS = { '': t => !t.hold, done: t => !t.hold && t.done, pend: t => !t.hold && !t.done, over: isOver, hold: t => t.hold, week: isWeek };
 
 // ---------- render ----------
 let scoped = [];
@@ -274,8 +279,10 @@ function render() {
   T0 = today.getTime(); M0 = monday.getTime();
 
   scoped = D.tasks.filter(t => LEVELS.every(l => !F[l.key] || t[l.key] === F[l.key]));
-  const total = scoped.length, done = scoped.filter(t => t.done).length, pending = total - done;
-  const overdue = scoped.filter(isOver).length, week = scoped.filter(isWeek).length;
+  const act = scoped.filter(t => !t.hold);
+  const total = act.length, done = act.filter(t => t.done).length, pending = total - done;
+  const overdue = act.filter(isOver).length, week = act.filter(isWeek).length;
+  const hold = scoped.length - act.length;
 
   const card = (st, cls, icon, label, value, note, barPct) => `
     <button class="card ${cls}${statusF && statusF === st ? ' on' : ''}" data-st="${st}" title="Show these tasks in the table">
@@ -289,13 +296,14 @@ function render() {
     card('done', 'c-done', '✓', 'Completed', done, pct(done, total) + '% of total', pct(done, total)) +
     card('pend', 'c-pending', '◷', 'Pending', pending, pct(pending, total) + '% of total', pct(pending, total)) +
     card('over', 'c-overdue', '!', 'Overdue', overdue, pct(overdue, pending) + '% of pending', pct(overdue, pending)) +
+    card('hold', 'c-hold', '<svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><rect x="2" y="1.5" width="2" height="7" rx=".5" fill="#fff"/><rect x="6" y="1.5" width="2" height="7" rx=".5" fill="#fff"/></svg>', 'Hold', hold, 'inactive in ASAP') +
     card('week', 'c-week', '★', 'Completed This Week', week, 'since Mon ' + fmtDay(M0));
   $('#cards').querySelectorAll('.card').forEach(c => (c.onclick = () => { statusF = statusF === c.dataset.st ? '' : c.dataset.st; render(); }));
 
   const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
   $('#scope').innerHTML = 'Showing: <b>' + esc(path.length ? path.join(' › ') : 'All projects') + '</b>';
 
-  const chipNames = [['', 'All'], ['pend', 'Pending'], ['over', 'Overdue'], ['done', 'Completed'], ['week', 'This week']];
+  const chipNames = [['', 'All'], ['pend', 'Pending'], ['over', 'Overdue'], ['done', 'Completed'], ['hold', 'Hold'], ['week', 'This week']];
   $('#chips').innerHTML = chipNames.map(([k, n]) => `<button class="chip${statusF === k ? ' on' : ''}" data-st="${k}">${n}</button>`).join(' ');
   $('#chips').querySelectorAll('.chip').forEach(c => (c.onclick = () => { statusF = c.dataset.st; render(); }));
   renderTable();
@@ -306,7 +314,7 @@ const COLS = [
   { key: 'area', label: 'Area', val: t => t.areaName },
   { key: 'sub', label: 'Sub Area', val: t => t.subName },
   { key: 'task', label: 'Task', val: t => t.name },
-  { key: 'status', label: 'Status', val: t => (t.done ? 2 : isOver(t) ? 0 : 1) },
+  { key: 'status', label: 'Status', val: t => (t.hold ? 3 : t.done ? 2 : isOver(t) ? 0 : 1) },
   { key: 'end', label: 'End Date', val: t => t.end },
   { key: 'rem', label: 'Remarks', val: t => t.remarkAt },  // sorts by remark date
 ];
@@ -336,7 +344,7 @@ function renderTable() {
   const showPath = !F.tower;
   const tr = t => {
     const over = isOver(t);
-    const status = t.done ? `<span class="pill done" title="Completed ${fd(t.doneAt)}">✓ Completed</span>` : over ? '<span class="pill over">⚠ Overdue</span>' : '<span class="pill pend">Pending</span>';
+    const status = t.hold ? `<span class="pill hold" title="Inactive in ASAP${t.done ? ' · was completed ' + fd(t.doneAt) : ''}">❚❚ Hold</span>` : t.done ? `<span class="pill done" title="Completed ${fd(t.doneAt)}">✓ Completed</span>` : over ? '<span class="pill over">⚠ Overdue</span>' : '<span class="pill pend">Pending</span>';
     const late = over ? ` <span class="late">(${Math.round((T0 - dayOf(t.end)) / DAY)}d late)</span>` : '';
     return `<tr>
       <td>${esc(t.areaName)}${showPath ? `<div class="path">${esc(F.project ? t.towerName : t.projectName + ' › ' + t.towerName)}</div>` : ''}</td>
@@ -383,11 +391,11 @@ const XL = (() => {
   const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <numFmts count="1"><numFmt numFmtId="164" formatCode="dd-mmm-yyyy"/></numFmts>
-<fonts count="7"><font><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="14"/><color rgb="FF1F3A5F"/><name val="Calibri"/></font><font><i/><sz val="10"/><color rgb="FF7D7C77"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FF166B3A"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FF8A5A00"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FFB42828"/><name val="Calibri"/></font></fonts>
-<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F3A5F"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6F5E6"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF4DC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDECEC"/></patternFill></fill></fills>
+<fonts count="8"><font><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="14"/><color rgb="FF1F3A5F"/><name val="Calibri"/></font><font><i/><sz val="10"/><color rgb="FF7D7C77"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FF166B3A"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FF8A5A00"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FFB42828"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FF52514E"/><name val="Calibri"/></font></fonts>
+<fills count="7"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F3A5F"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6F5E6"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF4DC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDECEC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEEEEEC"/></patternFill></fill></fills>
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFCBD4DF"/></left><right style="thin"><color rgb="FFCBD4DF"/></right><top style="thin"><color rgb="FFCBD4DF"/></top><bottom style="thin"><color rgb="FFCBD4DF"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="10">
+<cellXfs count="11">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
 <xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
 <xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top"/></xf>
@@ -398,6 +406,7 @@ const XL = (() => {
 <xf numFmtId="0" fontId="6" fillId="5" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf numFmtId="1" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>
+<xf numFmtId="0" fontId="7" fillId="6" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
 </cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   // build a one-sheet workbook. cols: [{label, width}], rows: arrays of {v, s, t:'d'|'n'|'s'}
   function workbook(sheetName, title, subtitle, cols, rows) {
@@ -451,17 +460,17 @@ $('#btnExport').onclick = () => {
   ];
   const data = rows.map((t, i) => {
     const over = isOver(t);
-    const st = t.done ? { v: 'Completed', s: 5 } : over ? { v: 'Overdue', s: 7 } : { v: 'Pending', s: 6 };
+    const st = t.hold ? { v: 'Hold', s: 10 } : t.done ? { v: 'Completed', s: 5 } : over ? { v: 'Overdue', s: 7 } : { v: 'Pending', s: 6 };
     const d = iso => ({ v: xlDate(iso), s: 2, t: 'd' });
     return [
       { v: i + 1, s: 9, t: 'n' }, { v: t.projectName }, { v: t.towerName }, { v: t.areaName }, { v: t.subName },
       { v: t.name, s: 8 }, { v: t.dept }, st, d(t.start), d(t.end),
-      over ? { v: Math.round((T0 - dayOf(t.end)) / DAY), s: 9, t: 'n' } : { s: 0 }, t.done ? d(t.doneAt) : { s: 2 },
+      over ? { v: Math.round((T0 - dayOf(t.end)) / DAY), s: 9, t: 'n' } : { s: 0 }, t.done && !t.hold ? d(t.doneAt) : { s: 2 },
       { v: t.remark, s: 8 }, { v: t.remarkKind === 'chat' ? t.remarkBy : t.remark ? 'Activity log' : '' }, d(t.remarkAt),
     ].map(o => (o.s == null ? { ...o, s: 0 } : o));
   });
   const scope = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name).join(' › ') || 'All projects';
-  const stName = { '': '', done: 'Completed', pend: 'Pending', over: 'Overdue', week: 'Completed this week' }[statusF];
+  const stName = { '': '', done: 'Completed', pend: 'Pending', over: 'Overdue', hold: 'Hold', week: 'Completed this week' }[statusF];
   const now = new Date();
   const sub = `${scope}${stName ? ' · ' + stName : ''}${tq ? ' · search "' + tq + '"' : ''} · ${rows.length} tasks · exported ${DATEFMT.format(now)} ${now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
   const blob = XL.workbook('Work Execution', 'Work Execution — Homeland Group FMS', sub, cols, data);
