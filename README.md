@@ -55,11 +55,11 @@ node server.js --open
 Keep the window open while using the page. First time only: create `.env` from `.env.example` with the API token (or double-click `start.bat`, which asks for it).
 
 ## Look and feel
-Royal blue and Homeland gold, Inter font, all in `public/theme.css`:
-- Blue gradient sidebar with the Homeland logo (`logo-light.png`), gold highlight on the current page, user card at the bottom.
-- Picture header behind the title and filters, and behind the sign-in page: **`public/hero.jpg`** (Homeland Global Park). To change it, replace that file with another wide photo (about 1920 x 700) and refresh. If the file is missing, a skyline illustration (`hero.svg`) is shown instead.
-- Coloured status cards with icons, rounded status tabs, navy table header with a gold line, rounded status tags.
-- **WhatsApp** button (Work Execution and Dashboard) opens WhatsApp with a summary of the current selection, ready to send.
+**Onyx & Gold** theme, matched to the Homeland logo gold (#B38750): charcoal sidebar with the Homeland logo, gold accents and progress bars, charcoal table header, status tags, IBM Plex Sans. The sign-in page uses the same charcoal and gold. All colours live in `public/theme.css`. Works down to phone width.
+
+**WhatsApp** button (Work Execution and Dashboard) opens WhatsApp with a summary of the current selection, ready to send.
+
+(`public/hero.jpg`, `hero.svg`, `side-skyline.svg`, `logo-light.png` and `theme.js` are from earlier designs and are not used.)
 
 ## How it works
 `server.js` (zero-dependency Node) serves `public/index.html` and `GET /api/data`, which pulls Project, Tower, Area, SubArea, Task, Department, Update and Chatmessage from PostgREST (cached 60 s; the page auto-refreshes every 5 minutes). The token stays in `.env` on this machine and is never sent to the browser.
