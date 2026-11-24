@@ -13,7 +13,6 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
-const { buildData } = require('./lib/build');
 
 loadEnv(path.join(__dirname, '.env'));
 
@@ -64,14 +63,29 @@ async function get(p) {
   return JSON.parse(text);
 }
 
+// ---------- data code (reloaded automatically when lib/build.js changes) ----------
+const BUILD = path.join(__dirname, 'lib', 'build.js');
+let buildMtime = 0, buildData = null;
+function currentBuild() {
+  const m = fs.statSync(BUILD).mtimeMs;
+  if (m !== buildMtime) {
+    delete require.cache[require.resolve(BUILD)];
+    buildData = require(BUILD).buildData;
+    if (buildMtime) { cache = null; console.log('[reload] lib/build.js changed, using the new version'); }
+    buildMtime = m;
+  }
+  return buildData;
+}
+
 // ---------- cached dataset ----------
 let cache = null;      // { at, data }
 let inflight = null;   // Promise while a fetch is running
 
 async function getData(force) {
+  const build = currentBuild();
   if (!force && cache && Date.now() - cache.at < CACHE_MS) return cache.data;
   if (!inflight) {
-    inflight = buildData(get)
+    inflight = build(get)
       .then(data => { cache = { at: Date.now(), data }; return data; })
       .finally(() => { inflight = null; });
   }
@@ -119,7 +133,10 @@ const server = http.createServer(async (req, res) => {
 
 server.on('error', e => {
   if (e.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Is the dashboard already running? Otherwise set PORT=xxxx in .env.`);
+    console.error(`\nPort ${PORT} is already in use: an older copy of this server is probably still running.\n` +
+      `Stop it, then start again. In PowerShell:\n\n` +
+      `  Get-NetTCPConnection -LocalPort ${PORT} -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n` +
+      `  node server.js --open\n`);
   } else {
     console.error(e);
   }
