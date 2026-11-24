@@ -2,9 +2,10 @@
 /**
  * Work Execution (Homeland FMS): local server.
  *
- * Serves the page on its own port (default 4783) and proxies data from the
+ * Serves the pages on their own port (default 4783) and proxies data from the
  * FMS PostgREST API. The API token stays on this machine (.env) and is never
- * sent to the browser.
+ * sent to the browser. Every page and data call needs a signed-in user
+ * (accounts are managed on the Users page; see lib/auth.js).
  *
  *   node server.js          start
  *   node server.js --open   start and open the browser
@@ -13,6 +14,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+const auth = require('./lib/auth');
 
 loadEnv(path.join(__dirname, '.env'));
 
@@ -95,17 +97,93 @@ async function getData(force) {
 // ---------- HTTP ----------
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon',
+  '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webp': 'image/webp',
 };
+// files anyone may load before signing in
+const PUBLIC_FILES = new Set(['/login.html', '/theme.css', '/theme.js', '/logo.png', '/favicon.png']);
+// pages that need a signed-in user (users.html needs an admin)
+const PAGES = new Set(['/', '/index.html', '/dashboard.html', '/users.html']);
 
-function send(res, status, body, type = 'application/json') {
-  res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+function send(res, status, body, type = 'application/json', extra = {}) {
+  res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin', ...extra });
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
+}
+function redirect(res, to) { res.writeHead(302, { Location: to, 'Cache-Control': 'no-store' }); res.end(); }
+
+// JSON body, max 10 KB
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    let size = 0, chunks = [];
+    req.on('data', c => { size += c.length; if (size > 10240) { reject(new auth.AuthError(413, 'Request too large.')); req.destroy(); } else chunks.push(c); });
+    req.on('end', () => { try { resolve(chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}); } catch { reject(new auth.AuthError(400, 'Invalid request.')); } });
+    req.on('error', reject);
+  });
+}
+// state-changing calls must be same-origin JSON (blocks cross-site form posts)
+function sameOrigin(req) {
+  if (!String(req.headers['content-type'] || '').startsWith('application/json')) return false;
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  try { return new URL(origin).host === req.headers.host; } catch { return false; }
+}
+
+async function handleAuthApi(req, res, url) {
+  const ip = req.socket.remoteAddress || '';
+  const user = auth.currentUser(req);
+  const p = url.pathname, m = req.method;
+
+  if (p === '/api/session' && m === 'GET') return send(res, 200, { user: user ? auth.pub(user) : null, setupNeeded: auth.setupNeeded() });
+
+  if (m !== 'GET' && !sameOrigin(req)) return send(res, 403, { error: 'Blocked: request must come from this site.' });
+
+  if (p === '/api/setup' && m === 'POST') {
+    const u = auth.setup(await readJson(req));
+    console.log(`[auth] first admin "${u.username}" created`);
+    return send(res, 200, { user: auth.pub(u) }, 'application/json', { 'Set-Cookie': auth.cookieHeader(auth.newSession(u.id), auth.SESSION_HOURS * 3600) });
+  }
+  if (p === '/api/login' && m === 'POST') {
+    const { user: u, token } = auth.login(ip, await readJson(req));
+    return send(res, 200, { user: auth.pub(u) }, 'application/json', { 'Set-Cookie': auth.cookieHeader(token, auth.SESSION_HOURS * 3600) });
+  }
+  if (p === '/api/logout' && m === 'POST') {
+    auth.logout(req);
+    return send(res, 200, { ok: true }, 'application/json', { 'Set-Cookie': auth.cookieHeader('', 0) });
+  }
+
+  if (!user) return send(res, 401, { error: 'Please sign in.' });
+
+  if (p === '/api/me/password' && m === 'POST') { auth.changeOwnPassword(user, await readJson(req)); return send(res, 200, { ok: true }); }
+
+  if (p === '/api/users' || p.startsWith('/api/users/')) {
+    if (user.role !== 'admin') return send(res, 403, { error: 'Only admins can manage users.' });
+    const id = p.split('/')[3];
+    if (!id && m === 'GET') return send(res, 200, { users: auth.listUsers() });
+    if (!id && m === 'POST') { const u = auth.createUser(user, await readJson(req)); console.log(`[auth] ${user.username} created user "${u.username}"`); return send(res, 201, { user: u }); }
+    if (id && m === 'PATCH') return send(res, 200, { user: auth.updateUser(user, id, await readJson(req)) });
+    if (id && m === 'DELETE') { auth.deleteUser(user, id); return send(res, 200, { ok: true }); }
+  }
+  return null; // not an auth route
 }
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
+
+  // accounts and sign-in
+  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/data' && url.pathname !== '/api/health') {
+    try {
+      const done = await handleAuthApi(req, res, url);
+      if (done !== null) return;
+    } catch (e) {
+      if (e instanceof auth.AuthError) return send(res, e.status, { error: e.message });
+      console.error('[auth]', e);
+      return send(res, 500, { error: 'Something went wrong on the server. See the PowerShell window.' });
+    }
+    return send(res, 404, { error: 'Not found' });
+  }
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Method not allowed' });
+
+  const user = auth.currentUser(req);
+  if (url.pathname.startsWith('/api/') && !user) return send(res, 401, { error: 'Please sign in.' });
 
   if (url.pathname === '/api/data') {
     try {
@@ -120,8 +198,16 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, { ok: true, api: API, cachedAt: cache ? new Date(cache.at).toISOString() : null });
   }
 
-  // static files
-  let rel = decodeURIComponent(url.pathname);
+  // static files: pages need a signed-in user; only the sign-in page and its assets are open
+  let rel;
+  try { rel = decodeURIComponent(url.pathname); } catch { return send(res, 400, 'Bad request', 'text/plain'); }
+  if (PAGES.has(rel)) {
+    if (!user) return redirect(res, '/login.html' + (rel === '/' ? '' : '?next=' + encodeURIComponent(rel)));
+    if (rel === '/users.html' && user.role !== 'admin') return redirect(res, '/dashboard.html');
+  } else if (!PUBLIC_FILES.has(rel) && !user) {
+    return redirect(res, '/login.html');
+  }
+  if (rel === '/login.html' && user) return redirect(res, '/dashboard.html');
   if (rel === '/') rel = '/index.html';
   const file = path.normalize(path.join(PUBLIC, rel));
   if (!file.startsWith(PUBLIC + path.sep)) return send(res, 403, { error: 'Forbidden' });
@@ -145,7 +231,9 @@ server.on('error', e => {
 
 server.listen(PORT, HOST, () => {
   const link = `http://localhost:${PORT}`;
-  console.log(`\n  Work Execution  →  ${link}\n  Data source: ${API}\n  Press Ctrl+C to stop.\n`);
+  console.log(`\n  Homeland FMS  →  ${link}\n  Data source: ${API}\n` +
+    (auth.setupNeeded() ? `  First run: open the link and create the admin account.\n` : `  Sign in with your user ID and password.\n`) +
+    `  Press Ctrl+C to stop.\n`);
   if (process.argv.includes('--open')) {
     const cmd = process.platform === 'win32' ? `start "" "${link}"` : process.platform === 'darwin' ? `open "${link}"` : `xdg-open "${link}"`;
     exec(cmd, () => {});

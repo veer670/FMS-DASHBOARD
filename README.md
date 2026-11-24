@@ -4,8 +4,18 @@ Two pages (tabs in the header) showing work execution status from the Homeland G
 
 Runs locally at **http://localhost:4783**
 
+## Sign in and users
+Every page needs a user ID and password.
+
+- **First run:** open http://localhost:4783. With no accounts yet, the sign-in page asks you to create the **admin account**.
+- **Admins** see a **Users** page in the menu: create user IDs and passwords, reset a password, make someone admin or user, disable or delete an account. Disabling, deleting or resetting a password signs that person out straight away. You cannot remove your own admin access, and there is always at least one admin.
+- **Everyone** can change their own password from the sidebar (*Change password*) and *Sign out*.
+- Accounts are stored in `data/users.json` on this computer (git-ignored). Passwords are stored only as salted scrypt hashes. Sign-ins last 12 hours (`SESSION_HOURS` in `.env`); restarting the server signs everyone out. 8 wrong passwords from one computer lock sign-in for 10 minutes.
+- The server listens on this computer only (`HOST=127.0.0.1`). To let colleagues on the office network open it, set `HOST=0.0.0.0` in `.env` and share `http://<this-computer's-IP>:4783`.
+
 ## Pages
 - **Work Execution** (`/`): cards + task table with export.
+- Menu order: **Dashboard**, **Work Execution**, and **Users** (admins only). After signing in you land on the Dashboard.
 - **Dashboard** (`/dashboard.html`): no filter bar. Progress by project (click one to see its locations, click a location to focus on it), progress by department, progress by area (click an area to see its sub areas) and overdue ageing. *Back to …* and *All projects* links step back out. It also opens on whatever selection you bring from Work Execution.
 
 The filters travel with you when you switch tabs.
@@ -45,11 +55,11 @@ node server.js --open
 Keep the window open while using the page. First time only: create `.env` from `.env.example` with the API token (or double-click `start.bat`, which asks for it).
 
 ## Look and feel
-Corporate theme shared in `public/theme.css` and `public/theme.js`: sidebar with the page menu, a colour-tinted status ledger with icons, coloured table header, status tags, accent-marked panel titles, IBM Plex Sans. Works down to phone width.
+Homeland logo in the sidebar and on the sign-in page. Corporate theme shared in `public/theme.css` and `public/theme.js`: sidebar with the page menu, a colour-tinted status ledger with icons, coloured table header, status tags, accent-marked panel titles, IBM Plex Sans. Works down to phone width.
 
-**Colour themes** (pick in the sidebar, remembered per browser):
-- **Blueprint** (default): the page as a construction drawing sheet: grid paper, blueprint sidebar, a drawing title block in the header (Project, Location, Updated, Sheet), crop-mark panel corners, Barlow Condensed numerals, stamped status tags, dimension-line progress bars.
-- Homeland Navy (navy + brass), Deep Teal (teal + amber), Charcoal (charcoal + copper).
+**Colour themes** (pick in the sidebar, remembered per browser): **Blueprint** (default) and **Homeland Navy**.
+- **Blueprint**: the page as a construction drawing sheet: grid paper, blueprint sidebar, a drawing title block in the header (Project, Location, Updated, Sheet), crop-mark panel corners, Barlow Condensed numerals, stamped status tags, dimension-line progress bars.
+- **Homeland Navy**: navy and brass.
 
 ## How it works
 `server.js` (zero-dependency Node) serves `public/index.html` and `GET /api/data`, which pulls Project, Tower, Area, SubArea, Task, Department, Update and Chatmessage from PostgREST (cached 60 s; the page auto-refreshes every 5 minutes). The token stays in `.env` on this machine and is never sent to the browser.
