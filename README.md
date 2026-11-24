@@ -57,7 +57,7 @@ Keep the window open while using the page. First time only: create `.env` from `
 ## Look and feel
 Royal blue and Homeland gold, Inter font, all in `public/theme.css`:
 - Blue gradient sidebar with the Homeland logo (`logo-light.png`), gold highlight on the current page, user card at the bottom.
-- Picture header behind the title and filters. It uses **`public/hero.jpg`** if that file exists; otherwise the built-in skyline illustration (`hero.svg`). To use a real project photo, save a wide photo (about 1920 x 600) as `public/hero.jpg` and refresh.
+- Picture header behind the title and filters, and behind the sign-in page: **`public/hero.jpg`** (Homeland Global Park). To change it, replace that file with another wide photo (about 1920 x 700) and refresh. If the file is missing, a skyline illustration (`hero.svg`) is shown instead.
 - Coloured status cards with icons, rounded status tabs, navy table header with a gold line, rounded status tags.
 - **WhatsApp** button (Work Execution and Dashboard) opens WhatsApp with a summary of the current selection, ready to send.
 

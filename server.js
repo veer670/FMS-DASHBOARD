@@ -97,10 +97,10 @@ async function getData(force) {
 // ---------- HTTP ----------
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webp': 'image/webp',
+  '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
 };
 // files anyone may load before signing in
-const PUBLIC_FILES = new Set(['/login.html', '/theme.css', '/theme.js', '/logo.png', '/favicon.png']);
+const PUBLIC_FILES = new Set(['/login.html', '/theme.css', '/theme.js', '/logo.png', '/favicon.png', '/hero.jpg']);
 // pages that need a signed-in user (users.html needs an admin)
 const PAGES = new Set(['/', '/index.html', '/dashboard.html', '/users.html']);
 
