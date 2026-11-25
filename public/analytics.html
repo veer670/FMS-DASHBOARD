@@ -31,15 +31,15 @@
   .tile.on .t-bar { background: rgba(255,255,255,.16); }
   .tile.on .t-late { color: #F2A89F; }
   .tiles.has-on .tile:not(.on):not(:hover) { opacity: .72; }
-  /* smaller tiles for projects and locations */
-  #tProjects .tile, #tTowers .tile { width: 138px; min-height: 0; padding: 9px 11px; gap: 3px; border-radius: 8px; }
-  #tProjects .tile .t-name, #tTowers .tile .t-name { font-size: 12.5px; -webkit-line-clamp: 1; display: block; white-space: nowrap; text-overflow: ellipsis; }
-  #tProjects .tile.all .t-name, #tTowers .tile.all .t-name { font-size: 13px; }
-  #tProjects .tile .t-sub, #tTowers .tile .t-sub { font-size: 11px; }
-  #tProjects .tile .t-pct b, #tTowers .tile .t-pct b { font-size: 16px; }
-  #tProjects .tile .t-pct, #tTowers .tile .t-pct, #tProjects .tile .t-cnt, #tTowers .tile .t-cnt { font-size: 11px; }
-  #tProjects .tile .t-bar, #tTowers .tile .t-bar { height: 4px; }
-  #tProjects, #tTowers { gap: 8px; }
+  /* smaller tiles for projects, locations and areas */
+  #tProjects .tile, #tTowers .tile, #tAreas .tile { width: 138px; min-height: 0; padding: 9px 11px; gap: 3px; border-radius: 8px; }
+  #tProjects .tile .t-name, #tTowers .tile .t-name, #tAreas .tile .t-name { font-size: 12.5px; -webkit-line-clamp: 1; display: block; white-space: nowrap; text-overflow: ellipsis; }
+  #tProjects .tile.all .t-name, #tTowers .tile.all .t-name, #tAreas .tile.all .t-name { font-size: 13px; }
+  #tProjects .tile .t-sub, #tTowers .tile .t-sub, #tAreas .tile .t-sub { font-size: 11px; }
+  #tProjects .tile .t-pct b, #tTowers .tile .t-pct b, #tAreas .tile .t-pct b { font-size: 16px; }
+  #tProjects .tile .t-pct, #tTowers .tile .t-pct, #tAreas .tile .t-pct, #tProjects .tile .t-cnt, #tTowers .tile .t-cnt, #tAreas .tile .t-cnt { font-size: 11px; }
+  #tProjects .tile .t-bar, #tTowers .tile .t-bar, #tAreas .tile .t-bar { height: 4px; }
+  #tProjects, #tTowers, #tAreas { gap: 8px; }
   .tiles-empty { color: var(--muted); font-size: 13px; padding: 6px 0; }
   .lvl-head { display: flex; align-items: baseline; gap: 10px; margin: 16px 0 10px; }
   .lvl-head:first-child { margin-top: 0; }
@@ -96,7 +96,7 @@
   .pick { display: inline-block; padding: 1px 9px; margin-left: 2px; background: #FBF3E4; color: #8A6A3A; border: 1px solid #EBD9B8; border-radius: 12px; font-weight: 700; font-size: 13px; }
 
   @media (max-width: 1100px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tile, #tProjects .tile, #tTowers .tile { width: calc(50% - 5px); } }
+  @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tile, #tProjects .tile, #tTowers .tile, #tAreas .tile { width: calc(50% - 5px); } }
 </style>
 </head>
 <body>
