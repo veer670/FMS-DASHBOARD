@@ -16,8 +16,9 @@ Every page needs a user ID and password.
 
 ## Pages
 - **Work Execution** (`/`): cards + task table with export.
-- Menu order: **Dashboard**, **Work Execution**, and **Users** (admins only). After signing in you land on the Dashboard.
+- Menu order: **Dashboard**, **Analytics**, **Work Execution**, and **Users** (admins only). After signing in you land on the Dashboard.
 - **Dashboard** (`/dashboard.html`): no filter bar. Progress by project (click one to see its locations, click a location to focus on it), progress by department, progress by area (click an area to see its sub areas) and overdue ageing. *Back to …* and *All projects* links step back out. It also opens on whatever selection you bring from Work Execution.
+- **Analytics** (`/analytics.html`): pick a project, then a location, then an area from rows of tiles (each shows % done, tasks and how many are late). Six count cards follow the selection: Total, Completed, Pending, Overdue, On hold and Done last 7 days, each with *View all* opening those tasks in Work Execution. A table below gives the same counts for each location, area or sub area in the selection.
 
 The filters travel with you when you switch tabs.
 
