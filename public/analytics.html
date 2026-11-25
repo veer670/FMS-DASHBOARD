@@ -50,15 +50,19 @@
   .scopeline b { color: var(--ink); }
   .scopeline .btn { margin-left: auto; }
 
-  /* count cards */
-  .cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; margin-bottom: 10px; }
-  .card { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--k); border-radius: 10px; padding: 16px 16px 14px; min-width: 0; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 2px rgba(20,20,20,.04); }
-  .card .c-label { font-size: 12.5px; font-weight: 600; color: var(--slate); display: flex; align-items: center; gap: 8px; }
-  .card .c-label i { width: 22px; height: 22px; border-radius: 6px; background: var(--kbg); color: var(--k); display: grid; place-items: center; flex: none; }
-  .card .c-value { font-size: 34px; font-weight: 600; letter-spacing: -.6px; line-height: 1.15; color: var(--kv, var(--ink)); font-variant-numeric: tabular-nums; margin-top: 6px; }
-  .card .c-note { font-size: 12.5px; color: var(--muted); }
-  .card .c-link { margin-top: 8px; font-size: 12.5px; font-weight: 600; color: var(--k); text-decoration: none; align-self: flex-start; }
-  .card .c-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+  /* count cards (compact); click one to filter the task list */
+  .cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px; }
+  .card { appearance: none; font: inherit; text-align: left; cursor: pointer; background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--k); border-radius: 8px; padding: 10px 12px 9px; min-width: 0; display: flex; flex-direction: column; gap: 1px; box-shadow: 0 1px 2px rgba(20,20,20,.04); transition: box-shadow .15s, background .15s; }
+  .card:hover { background: var(--kbg); }
+  .card.on { background: var(--kbg); box-shadow: inset 0 0 0 2px var(--k); }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card .c-label { font-size: 11.5px; font-weight: 600; color: var(--slate); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .card .c-label i { width: 18px; height: 18px; border-radius: 5px; background: var(--kbg); color: var(--k); display: grid; place-items: center; flex: none; }
+  .card .c-value { font-size: 22px; font-weight: 600; letter-spacing: -.4px; line-height: 1.2; color: var(--kv, var(--ink)); font-variant-numeric: tabular-nums; margin-top: 3px; }
+  .card .c-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .card .c-note { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .c-link { font-size: 11px; font-weight: 600; color: var(--k); text-decoration: none; white-space: nowrap; }
+  .card .c-link:hover { text-decoration: underline; text-underline-offset: 2px; }
   .c-total { --k: var(--brand); --kbg: var(--hover); }
   .c-done { --k: var(--done); --kbg: var(--done-bg); --kv: var(--done); }
   .c-pend { --k: var(--pend); --kbg: var(--pend-bg); --kv: var(--pend); }
@@ -70,26 +74,28 @@
   .key i { width: 11px; height: 11px; border-radius: 3px; background: var(--c); }
   .key b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  /* breakdown table */
-  .tbl-wrap { overflow-x: auto; }
-  table.bd { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
-  table.bd th { text-align: right; font-weight: 600; font-size: 12px; color: #fff; background: var(--brand); padding: 9px 12px; white-space: nowrap; }
-  table.bd th:first-child { text-align: left; border-radius: 6px 0 0 0; }
-  table.bd th:last-child { border-radius: 0 6px 0 0; }
-  table.bd td { padding: 9px 12px; border-bottom: 1px solid var(--rule-soft); text-align: right; white-space: nowrap; }
-  table.bd td:first-child { text-align: left; white-space: normal; min-width: 180px; }
-  table.bd td small { display: block; color: var(--muted); font-size: 11.5px; }
-  table.bd tbody tr.click { cursor: pointer; }
-  table.bd tbody tr.click:hover { background: var(--hover); }
-  table.bd tbody tr.click:hover td:first-child .nm { text-decoration: underline; text-underline-offset: 2px; }
-  table.bd tfoot td { font-weight: 700; background: var(--tint); border-top: 2px solid var(--rule); border-bottom: 0; }
-  table.bd .n-done { color: var(--done); } table.bd .n-over { color: var(--over); } table.bd .n-hold { color: var(--hold); } table.bd .n-pend { color: var(--pend); }
-  table.bd .zero { color: var(--muted); font-weight: 400; }
-  .pbar { display: inline-flex; align-items: center; gap: 8px; }
-  .pbar .track { width: 70px; height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
-  .pbar .track i { display: block; height: 100%; background: var(--accent); }
+  /* task list */
+  .tbl-wrap { overflow: auto; max-height: 70vh; border: 1px solid var(--rule); border-radius: var(--radius); }
+  table.tk { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; table-layout: fixed; min-width: 960px; }
+  table.tk col.c-task { width: 22%; } table.tk col.c-sub { width: 15%; } table.tk col.c-area { width: 16%; } table.tk col.c-end { width: 116px; } table.tk col.c-st { width: 116px; }
+  table.tk th, table.tk td { padding: 8px 12px; border-bottom: 1px solid var(--rule-soft); text-align: left; vertical-align: top; }
+  table.tk th { position: sticky; top: 0; z-index: 1; background: var(--brand); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; border-bottom: 2px solid var(--accent); }
+  table.tk tbody tr:nth-child(even) td { background: var(--tint); }
+  table.tk tbody tr:hover td { background: var(--hover); }
+  table.tk td { word-break: break-word; }
+  table.tk .path, table.tk .dept { color: var(--muted); font-size: 11.5px; }
+  table.tk td.rem { color: var(--slate); font-size: 12.5px; }
+  table.tk td.rem.chat { color: var(--ink); }
+  table.tk td.rem.log { color: var(--muted); font-style: italic; }
+  table.tk td.rem .when { color: var(--muted); font-size: 11px; margin-top: 1px; font-style: normal; }
+  table.tk .empty { color: var(--muted); text-align: center; padding: 24px; }
+  .st { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; padding: 3px 10px 3px 8px; border-radius: 99px; background: var(--sbg); }
+  .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+  .st.done { color: var(--done); --sbg: var(--done-bg); } .st.pend { color: var(--pend); --sbg: var(--pend-bg); } .st.over { color: var(--over); --sbg: var(--over-bg); } .st.hold { color: var(--hold); --sbg: var(--hold-bg); }
+  .late { color: var(--over); font-size: 11.5px; }
+  .pick { display: inline-block; padding: 1px 9px; margin-left: 2px; background: #FBF3E4; color: #8A6A3A; border: 1px solid #EBD9B8; border-radius: 12px; font-weight: 700; font-size: 13px; }
 
-  @media (max-width: 1250px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1100px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tile, #tProjects .tile, #tTowers .tile { width: calc(50% - 5px); } }
 </style>
 </head>
@@ -138,12 +144,16 @@
   <div class="key" id="key"></div>
 
   <section class="panel">
-    <div class="phead"><h2 id="hTable">Counts by project</h2><span class="hint" id="hintTable">Click a row to drill down</span></div>
-    <div class="tbl-wrap"><table class="bd" id="bd"></table></div>
+    <div class="phead"><h2 id="hTable">Tasks</h2><span class="hint" id="hintTable"></span><div class="act"><button class="btn" id="btnAllSt" hidden>Show all statuses</button></div></div>
+    <div class="tbl-wrap"><table class="tk">
+      <colgroup><col class="c-task"><col class="c-sub"><col class="c-area"><col class="c-end"><col class="c-st"><col class="c-rem"></colgroup>
+      <thead><tr><th>Task</th><th>Sub Area</th><th>Area</th><th>End Date</th><th>Status</th><th>Remarks</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
   </section>
 
   <footer class="notes">
-    <p>Total counts active tasks. Pending means not yet completed; overdue means pending and past its end date. On hold covers tasks marked inactive in ASAP (the task or anything above it) and is counted separately, outside Total. Done last 7 days counts tasks completed from 6 days ago up to today. Location is the ASAP "Tower" level.</p>
+    <p>Total counts active tasks. Pending means not yet completed; overdue means pending and past its end date. On hold covers tasks marked inactive in ASAP (the task or anything above it) and is counted separately, outside Total. Done last 7 days counts tasks completed from 6 days ago up to today. Click a card to list just those tasks below. Location is the ASAP "Tower" level.</p>
   </footer>
 </main>
 </div>
@@ -201,12 +211,13 @@ function prepare(d) {
   const byId = {}, pos = {}, all = {};
   for (const k in lists) { byId[k] = new Map(lists[k].map(x => [x.id, x])); all[k] = new Map(d[k].map(x => [x.id, x])); d[k].forEach((x, i) => (pos[x.id] = i)); }
   const tasks = [];
-  for (const t of d.tasks) {
+  for (const [i, t] of d.tasks.entries()) {
     const s = all.subAreas.get(t.subAreaId), a = s && all.areas.get(s.parent), tw = a && all.towers.get(a.parent), p = tw && all.projects.get(tw.parent);
     if (!p) continue;
     // same rule as Work Execution: on hold when the task or anything above it is inactive in ASAP
     const hold = !(t.active && s.active && a.active && tw.active && p.active);
-    tasks.push({ hold, done: t.done, doneAt: t.doneAt, end: t.end, project: p.id, tower: tw.id, area: a.id, subArea: s.id });
+    tasks.push({ ...t, hold, project: p.id, tower: tw.id, area: a.id, subArea: s.id, areaName: a.name, subName: s.name, towerName: tw.name, projectName: p.name,
+      ord: [pos[p.id], pos[tw.id], pos[a.id], pos[s.id], i] });
   }
   return { ...lists, byId, all, pos, tasks };
 }
@@ -231,6 +242,13 @@ function groupCounts(tasks, key) {
   for (const [id, list] of m) out.set(id, count(list));
   return out;
 }
+const isOver = t => !t.hold && !t.done && t.end && dayOf(t.end) < T0;
+const STATUS = {
+  '': t => !t.hold, done: t => !t.hold && t.done, pend: t => !t.hold && !t.done, over: isOver, hold: t => t.hold,
+  d7: t => !t.hold && t.done && t.doneAt && new Date(t.doneAt).getTime() >= W0,
+};
+const ST_NAME = { '': 'All active tasks', done: 'Completed', pend: 'Pending', over: 'Overdue', hold: 'On hold', d7: 'Done last 7 days' };
+let statusF = '';
 const inScope = (t, upto) => LEVELS.slice(0, upto).every(l => !F[l.key] || t[l.key] === F[l.key]);
 
 // ---------- selection ----------
@@ -324,11 +342,10 @@ function render() {
     hold: '<path d="M6 4v8M10 4v8"/>',
     d7: '<rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/>',
   };
-  const card = (cls, key, label, value, note, st) => `<div class="card ${cls}">
-      <span class="c-label"><i aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">${ICON[key]}</svg></i>${label}</span>
+  const card = (cls, key, label, value, note, st) => `<div class="card ${cls}${statusF === st ? ' on' : ''}" role="button" tabindex="0" data-st="${st}" aria-pressed="${statusF === st}" title="List these tasks below">
+      <span class="c-label"><i aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">${ICON[key]}</svg></i>${label}</span>
       <span class="c-value">${fmtN(value)}</span>
-      <span class="c-note">${note}</span>
-      <a class="c-link" href="/${carry(st ? { status: st } : {})}">View all →</a>
+      <span class="c-foot"><span class="c-note">${note}</span><a class="c-link" href="/${carry(st ? { status: st } : {})}" title="Open in Work Execution">View all →</a></span>
     </div>`;
   $('#cards').innerHTML =
     card('c-total', 'total', 'Total tasks', c.total, 'Active tasks', '') +
@@ -337,35 +354,45 @@ function render() {
     card('c-over', 'over', 'Overdue', c.over, 'Needs attention', 'over') +
     card('c-hold', 'hold', 'On hold', c.hold, 'Inactive in ASAP', 'hold') +
     card('c-d7', 'd7', 'Done last 7 days', c.d7, 'Since ' + new Date(W0).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), 'd7');
+  $('#cards').querySelectorAll('.card').forEach(el => {
+    const go = () => { statusF = el.dataset.st; render(); };
+    el.onclick = e => { if (!e.target.closest('a')) go(); };
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+  });
   $('#key').innerHTML = `<span><i style="--c:var(--done)"></i>Done <b>${fmtN(c.done)}</b></span><span><i style="--c:var(--pend)"></i>Pending <b>${fmtN(c.pend)}</b></span><span><i style="--c:var(--over)"></i>Overdue <b>${fmtN(c.over)}</b></span><span><i style="--c:var(--hold)"></i>On hold <b>${fmtN(c.hold)}</b></span>`;
 
-  renderTable(scoped, c);
+  renderTasks(scoped, where);
 }
 
-// one row per item at the next level down (sub areas once an area is chosen)
-function renderTable(scoped, totals) {
-  const lv = F.area ? 3 : F.tower ? 2 : F.project ? 1 : 0;
-  const L = LEVELS[lv];
-  const counts = groupCounts(scoped, L.key);
-  const items = [...counts.keys()].map(id => D.all[L.list].get(id)).filter(Boolean)
-    .sort((a, b) => D.pos[a.id] - D.pos[b.id]);
-  const parentName = F[LEVELS[Math.max(0, lv - 1)].key] && lv ? D.all[LEVELS[lv - 1].list].get(F[LEVELS[lv - 1].key])?.name : '';
-  $('#hTable').innerHTML = `Counts by ${L.name.toLowerCase()}` + (parentName ? ` in <span class="pick">${esc(parentName)}</span>` : '');
-  $('#hintTable').textContent = lv < 3 ? 'Click a row to drill down' : 'Click a row to open its tasks in Work Execution';
-  const z = (n, cls) => `<span class="${n ? cls : 'zero'}">${fmtN(n)}</span>`;
-  const row = (c) => `<td>${fmtN(c.total)}</td><td>${z(c.done, 'n-done')}</td><td>${z(c.pend, 'n-pend')}</td><td>${z(c.over, 'n-over')}</td><td>${z(c.hold, 'n-hold')}</td><td>${z(c.d7, '')}</td>
-      <td><span class="pbar"><span class="track"><i style="width:${pct(c.done, c.total)}%"></i></span>${pct(c.done, c.total)}%</span></td>`;
-  $('#bd').innerHTML = `<thead><tr><th>${L.name}</th><th>Total</th><th>Completed</th><th>Pending</th><th>Overdue</th><th>On hold</th><th>Done 7 days</th><th>Progress</th></tr></thead>
-    <tbody>${items.map(x => {
-      const inactive = !D.byId[L.list].has(x.id);
-      return `<tr class="click" data-id="${esc(x.id)}" data-inactive="${inactive}"><td><span class="nm">${esc(x.name)}</span>${inactive ? '<small>Inactive in ASAP</small>' : ''}</td>${row(counts.get(x.id))}</tr>`;
-    }).join('') || '<tr><td colspan="8" class="zero">No tasks in this selection</td></tr>'}</tbody>
-    <tfoot><tr><td>Total</td>${row(totals)}</tr></tfoot>`;
-  $('#bd').querySelectorAll('tbody tr.click').forEach(r => (r.onclick = () => {
-    const id = r.dataset.id;
-    if (lv === 3 || r.dataset.inactive === 'true') { const q = { ...F, [L.key]: id }; const s = new URLSearchParams(); for (const k in q) if (q[k]) s.set(k, q[k]); if (r.dataset.inactive === 'true') s.set('status', 'hold'); location.href = '/?' + s; return; }
-    select(lv, id);
-  }));
+// ---------- task list: Task, Sub Area, Area, End Date, Status, Remarks ----------
+const DATEFMT = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+const fd = iso => (iso ? DATEFMT.format(new Date(iso)) : '—');
+let renderToken = 0;
+function renderTasks(scoped, where) {
+  const rows = scoped.filter(STATUS[statusF]).sort((a, b) => { for (let i = 0; i < 5; i++) if (a.ord[i] !== b.ord[i]) return a.ord[i] - b.ord[i]; return 0; });
+  $('#hTable').innerHTML = esc(ST_NAME[statusF]) + ' in <span class="pick">' + esc(where) + '</span>';
+  $('#hintTable').textContent = fmtN(rows.length) + ' task' + (rows.length === 1 ? '' : 's') + ' · click a card above to change the list';
+  $('#btnAllSt').hidden = !statusF;
+  $('#btnAllSt').onclick = () => { statusF = ''; render(); };
+  const showPath = !F.tower;
+  const tr = t => {
+    const over = isOver(t);
+    const status = t.hold ? '<span class="st hold">On hold</span>' : t.done ? `<span class="st done" title="Completed ${fd(t.doneAt)}">Completed</span>` : over ? '<span class="st over">Overdue</span>' : '<span class="st pend">Pending</span>';
+    const late = over ? `<div class="late">${Math.round((T0 - dayOf(t.end)) / DAY)} days late</div>` : '';
+    return `<tr>
+      <td>${esc(t.name)}${t.dept ? `<div class="dept">${esc(t.dept)}</div>` : ''}</td>
+      <td>${esc(t.subName)}</td>
+      <td>${esc(t.areaName)}${showPath ? `<div class="path">${esc(F.project ? t.towerName : t.projectName + ' / ' + t.towerName)}</div>` : ''}</td>
+      <td>${fd(t.end)}${late}</td>
+      <td>${status}</td>
+      <td class="rem ${t.remarkKind || ''}">${t.remark ? `${esc(t.remark)}<div class="when">${t.remarkKind === 'chat' ? `${esc(t.remarkBy)}${t.remarkStep ? ', ' + esc(t.remarkStep) : ''}, ` : 'Activity log, '}${fd(t.remarkAt)}</div>` : '<span class="path">—</span>'}</td></tr>`;
+  };
+  // first rows at once, the rest in chunks so the page stays responsive
+  const tb = $('#rows'), token = ++renderToken, FIRST = 200, CHUNK = 600;
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">No tasks in this selection</td></tr>'; return; }
+  tb.innerHTML = rows.slice(0, FIRST).map(tr).join('');
+  const more = i => { if (token !== renderToken || i >= rows.length) return; tb.insertAdjacentHTML('beforeend', rows.slice(i, i + CHUNK).map(tr).join('')); setTimeout(() => more(i + CHUNK), 0); };
+  setTimeout(() => more(FIRST), 0);
 }
 
 load(false);
