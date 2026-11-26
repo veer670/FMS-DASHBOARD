@@ -129,7 +129,7 @@
 
   <footer class="notes">
     <p>Pending means not yet completed. Overdue means pending and past its end date. Completed this week counts from Monday.</p>
-    <p>Hold covers tasks marked inactive in ASAP, either the task itself or its sub area, area or location. They are kept out of Total, Pending and Overdue, but they are listed under "All (incl. hold)" with a grey Hold badge, and inactive projects, locations, areas and sub areas appear in the filters marked "(Hold)".</p>
+    <p>Hold covers tasks marked inactive in ASAP, either the task itself or its sub area, area or location. They are counted in Total but kept out of Completed, Pending and Overdue (whose percentages are of active tasks), and they are listed under "All (incl. hold)" with a grey Hold badge, and inactive projects, locations, areas and sub areas appear in the filters marked "(Hold)".</p>
     <p>Remarks show the latest step-chat message from the site team; tasks without chat show the latest activity-log entry in grey italics. Automatic overdue reminders are hidden.</p>
   </footer>
 </main>
@@ -282,13 +282,14 @@ function render() {
       <span class="k-note">${note}</span>
     </button>`;
   $('#cards').innerHTML =
-    card('', 'k-total', 'Total tasks', total, hold ? 'Active, plus ' + fmtN(hold) + ' on hold' : 'In this selection') +
-    card('done', 'k-done', 'Completed', done, pct(done, total) + '% of total') +
-    card('pend', 'k-pend', 'Pending', pending, pct(pending, total) + '% of total') +
+    // Total counts every task in the selection, on-hold ones included
+    card('', 'k-total', 'Total tasks', scoped.length, hold ? fmtN(total) + ' active + ' + fmtN(hold) + ' on hold' : 'In this selection') +
+    card('done', 'k-done', 'Completed', done, pct(done, total) + '% of active') +
+    card('pend', 'k-pend', 'Pending', pending, pct(pending, total) + '% of active') +
     card('over', 'k-over', 'Overdue', overdue, pct(overdue, pending) + '% of pending') +
     card('hold', 'k-hold', 'Hold', hold, 'Inactive in ASAP') +
     card('week', 'k-week', 'Completed this week', week, 'Since Monday ' + fmtDay(M0));
-  SUM = { total, done, pending, overdue, hold, week };
+  SUM = { all: scoped.length, total, done, pending, overdue, hold, week };
   $('#cards').querySelectorAll('.kpi').forEach(c => (c.onclick = () => { statusF = statusF === c.dataset.st ? '' : c.dataset.st; render(); }));
 
   const path = LEVELS.filter(l => F[l.key]).map(l => D.byId[l.list].get(F[l.key]).name);
@@ -482,7 +483,7 @@ $('#btnWa').onclick = () => {
   const n = v => fmtN(v);
   const text = [
     '*Homeland Group: Work Execution*', sel, '',
-    `Total tasks: ${n(SUM.total)}`, `Completed: ${n(SUM.done)} (${pct(SUM.done, SUM.total)}%)`, `Pending: ${n(SUM.pending)}`,
+    `Total tasks: ${n(SUM.all)}` + (SUM.hold ? ` (${n(SUM.total)} active + ${n(SUM.hold)} on hold)` : ''), `Completed: ${n(SUM.done)} (${pct(SUM.done, SUM.total)}% of active)`, `Pending: ${n(SUM.pending)}`,
     `Overdue: ${n(SUM.overdue)}`, `Hold: ${n(SUM.hold)}`, `Completed this week: ${n(SUM.week)}`, '',
     GEN ? `Updated ${GEN.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '',
   ].join('\n');
