@@ -58,6 +58,8 @@
   td.rem.log { color: var(--muted); font-style: italic; }
   .st { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; padding: 3px 10px 3px 8px; border-radius: 99px; background: var(--sbg); }
   .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+  tr.is-hold td { color: var(--slate); background-color: #F4F4F5; }
+  tr.is-hold td:first-child { box-shadow: inset 3px 0 0 var(--hold); }
   .st.done { color: var(--done); --sbg: var(--done-bg); } .st.pend { color: var(--pend); --sbg: var(--pend-bg); } .st.over { color: var(--over); --sbg: var(--over-bg); } .st.hold { color: var(--hold); --sbg: var(--hold-bg); }
   .late { color: var(--over); font-size: 12px; }
 
@@ -127,7 +129,7 @@
 
   <footer class="notes">
     <p>Pending means not yet completed. Overdue means pending and past its end date. Completed this week counts from Monday.</p>
-    <p>Hold covers tasks marked inactive in ASAP, either the task itself or its sub area, area or location. They are kept out of Total, Pending and Overdue.</p>
+    <p>Hold covers tasks marked inactive in ASAP, either the task itself or its sub area, area or location. They are kept out of Total, Pending and Overdue, but they are listed under "All (incl. hold)" with a grey Hold badge, and inactive projects, locations, areas and sub areas appear in the filters marked "(Hold)".</p>
     <p>Remarks show the latest step-chat message from the site team; tasks without chat show the latest activity-log entry in grey italics. Automatic overdue reminders are hidden.</p>
   </footer>
 </main>
@@ -190,10 +192,13 @@ async function load(force) {
 }
 
 function prepare(d) {
-  const live = arr => arr.filter(x => x.active);
-  const lists = { projects: live(d.projects), towers: live(d.towers), areas: live(d.areas), subAreas: live(d.subAreas) };
+  // inactive (Hold) projects, locations, areas and sub areas stay in the lists so they can be filtered;
+  // an item counts as held when it, or anything above it, is inactive in ASAP
+  const lists = { projects: d.projects, towers: d.towers, areas: d.areas, subAreas: d.subAreas };
   const byId = {}, pos = {}, all = {};
-  for (const k in lists) { byId[k] = new Map(lists[k].map(x => [x.id, x])); all[k] = new Map(d[k].map(x => [x.id, x])); d[k].forEach((x, i) => (pos[x.id] = i)); }
+  for (const k in lists) { byId[k] = new Map(lists[k].map(x => [x.id, x])); all[k] = byId[k]; d[k].forEach((x, i) => (pos[x.id] = i)); }
+  const parentOf = { towers: 'projects', areas: 'towers', subAreas: 'areas' };
+  for (const k of ['projects', 'towers', 'areas', 'subAreas']) for (const x of lists[k]) x.held = !x.active || !!(parentOf[k] && byId[parentOf[k]].get(x.parent)?.held);
   const tasks = [];
   d.tasks.forEach((t, i) => {
     const s = all.subAreas.get(t.subAreaId), a = s && all.areas.get(s.parent), tw = a && all.towers.get(a.parent), p = tw && all.projects.get(tw.parent);
@@ -224,7 +229,7 @@ function optionsFor(i) {
 function fillFilters() {
   LEVELS.forEach((l, i) => {
     const parentList = i > 0 ? LEVELS[i - 1].list : null;
-    const label = x => (i > 0 && !F[LEVELS[i - 1].key] ? `${x.name} — ${D.byId[parentList].get(x.parent)?.name || ''}` : x.name);
+    const label = x => (i > 0 && !F[LEVELS[i - 1].key] ? `${x.name} — ${D.byId[parentList].get(x.parent)?.name || ''}` : x.name) + (x.held ? '  (Hold)' : '');
     $(l.sel).innerHTML = `<option value="">${l.all}</option>` + optionsFor(i).map(x => `<option value="${esc(x.id)}"${x.id === F[l.key] ? ' selected' : ''}>${esc(label(x))}</option>`).join('');
   });
 }
@@ -245,7 +250,7 @@ const dayOf = iso => { const d = new Date(iso); d.setHours(0, 0, 0, 0); return d
 const isOver = t => !t.hold && !t.done && t.end && dayOf(t.end) < T0;
 const isWeek = t => !t.hold && t.done && t.doneAt && new Date(t.doneAt).getTime() >= M0;
 const isD7 = t => !t.hold && t.done && t.doneAt && new Date(t.doneAt).getTime() >= T0 - 6 * DAY; // done in the last 7 days (from Analytics)
-const STATUS = { '': t => !t.hold, done: t => !t.hold && t.done, pend: t => !t.hold && !t.done, over: isOver, hold: t => t.hold, week: isWeek, d7: isD7 };
+const STATUS = { '': () => true, done: t => !t.hold && t.done, pend: t => !t.hold && !t.done, over: isOver, hold: t => t.hold, week: isWeek, d7: isD7 };
 
 // ---------- render ----------
 let scoped = [], GEN = null, SUM = null;
@@ -277,7 +282,7 @@ function render() {
       <span class="k-note">${note}</span>
     </button>`;
   $('#cards').innerHTML =
-    card('', 'k-total', 'Total tasks', total, 'In this selection') +
+    card('', 'k-total', 'Total tasks', total, hold ? 'Active, plus ' + fmtN(hold) + ' on hold' : 'In this selection') +
     card('done', 'k-done', 'Completed', done, pct(done, total) + '% of total') +
     card('pend', 'k-pend', 'Pending', pending, pct(pending, total) + '% of total') +
     card('over', 'k-over', 'Overdue', overdue, pct(overdue, pending) + '% of pending') +
@@ -290,7 +295,7 @@ function render() {
   $('#scope').innerHTML = path.length ? path.map((n, i) => i === path.length - 1 ? `<b>${esc(n)}</b>` : esc(n)).join('<span class="sep">/</span>') : 'All projects';
   LEVELS.forEach(l => $(l.sel).classList.toggle('set', !!F[l.key]));
 
-  const chipNames = [['', 'All'], ['pend', 'Pending'], ['over', 'Overdue'], ['done', 'Completed'], ['hold', 'Hold'], ['week', 'This week'], ...(statusF === 'd7' ? [['d7', 'Last 7 days']] : [])];
+  const chipNames = [['', 'All (incl. hold)'], ['pend', 'Pending'], ['over', 'Overdue'], ['done', 'Completed'], ['hold', 'Hold'], ['week', 'This week'], ...(statusF === 'd7' ? [['d7', 'Last 7 days']] : [])];
   $('#chips').innerHTML = chipNames.map(([k, n]) => `<button class="chip${statusF === k ? ' on' : ''}" data-st="${k}" aria-pressed="${statusF === k}">${n}</button>`).join('');
   $('#chips').querySelectorAll('.chip').forEach(c => (c.onclick = () => { statusF = c.dataset.st; render(); }));
   renderTable();
@@ -333,7 +338,7 @@ function renderTable() {
     const over = isOver(t);
     const status = t.hold ? `<span class="st hold" title="Inactive in ASAP${t.done ? ', was completed ' + fd(t.doneAt) : ''}">Hold</span>` : t.done ? `<span class="st done" title="Completed ${fd(t.doneAt)}">Completed</span>` : over ? '<span class="st over">Overdue</span>' : '<span class="st pend">Pending</span>';
     const late = over ? `<div class="late">${Math.round((T0 - dayOf(t.end)) / DAY)} days late</div>` : '';
-    return `<tr>
+    return `<tr${t.hold ? ' class="is-hold"' : ''}>
       <td>${esc(t.areaName)}${showPath ? `<div class="path">${esc(F.project ? t.towerName : t.projectName + ' / ' + t.towerName)}</div>` : ''}</td>
       <td>${esc(t.subName)}</td>
       <td>${esc(t.name)}${t.dept ? `<div class="dept">${esc(t.dept)}</div>` : ''}</td>
@@ -343,7 +348,8 @@ function renderTable() {
   };
   shownRows = rows;
   const html = rows.map(tr);
-  $('#tHint').textContent = `${fmtN(rows.length)} task${rows.length === 1 ? '' : 's'}, ` + (sort.key === 'path' ? 'in ASAP order' : 'sorted by ' + COLS.find(c => c.key === sort.key).label.toLowerCase());
+  const nHold = statusF === 'hold' ? 0 : rows.filter(t => t.hold).length;
+  $('#tHint').textContent = `${fmtN(rows.length)} task${rows.length === 1 ? '' : 's'}${nHold ? ` (${fmtN(nHold)} on hold)` : ''}, ` + (sort.key === 'path' ? 'in ASAP order' : 'sorted by ' + COLS.find(c => c.key === sort.key).label.toLowerCase());
 
   // first rows at once, the rest in chunks so the page stays responsive
   const tb = $('#rows'), token = ++renderToken, FIRST = 300, CHUNK = 700;
