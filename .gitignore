@@ -5,3 +5,4 @@ node_modules/
 Thumbs.db
 data/
 Claude outputs/
+_to_delete/
